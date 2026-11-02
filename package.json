@@ -14,9 +14,6 @@
   "files": [
     "dist"
   ],
-  "trustedDependencies": [
-    "altiumts"
-  ],
   "publishConfig": {
     "access": "public"
   },
@@ -48,7 +45,7 @@
   },
   "dependencies": {
     "@tscircuit/math-utils": "^0.0.9",
-    "altiumts": "github:tscircuit/altiumts#8db22cf449c7bf6584a968b4913be4e1bd4a93ad",
+    "altiumts": "0.0.95",
     "circuit-json": "0.0.486",
     "format-si-unit": "^0.0.11",
     "polygon-clipping": "^0.15.7",
