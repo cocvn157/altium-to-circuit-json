@@ -68,5 +68,5 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     originalNetNames: new Map(imported.circuitJson.filter(e => e.type === "source_net").map(e => [e.source_net_id, e.name])),
   })
   options.stage?.("poured", { pours: result.pours.length })
-  return { ...result, baseline: rendered, sourceControl: [...imported.circuitJson, ...imported.definitions.filter(d => d.fixed).map(d => d.copper)], tsx: routingTsx }
+  return { ...result, baseline: rendered, sourceControl: [...imported.circuitJson, ...imported.definitions.filter(d => d.fixed).map(d => d.copper)], runtimeNames: context.runtimeNetNameBySourceNetId, tsx: routingTsx }
 }
