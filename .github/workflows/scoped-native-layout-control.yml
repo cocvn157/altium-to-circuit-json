@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: tscircuit/circuit-json-to-tscircuit
-          ref: 7ccfacf2e28a2841a4bdb1db3dedfbeb33b60e62
+          ref: 714d8b264fbdf0d1786f061b1191b1bf0ade892c
           path: runtime-converter
       - uses: oven-sh/setup-bun@v2
         with:
