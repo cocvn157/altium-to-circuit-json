@@ -1,0 +1,36 @@
+name: Run published converters on TI power boards
+on:
+  push:
+    branches: [codex/scoped-copper-native-metadata]
+permissions:
+  contents: read
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 0bbc941392622667b66fcd5bb6cea4dee8382229
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - run: bun install --frozen-lockfile
+      - run: bun run download-references
+      - name: Prepare isolated npm consumer
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');const files={"package.json":"{\n  \"name\": \"ti-power-fresh-pours\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"dependencies\": {\n    \"altium-to-circuit-json\": \"0.0.116\",\n    \"altiumts\": \"0.0.95\",\n    \"circuit-json-to-tscircuit\": \"0.0.100\",\n    \"tscircuit\": \"0.0.3062\",\n    \"@tscircuit/core\": \"0.0.2259\",\n    \"circuit-to-svg\": \"0.0.454\",\n    \"stack-svgs\": \"0.0.1\",\n    \"typescript\": \"5.9.3\"\n  }\n}\n","metadata.ts":"import {parseAltiumBinaryPcbDoc,AltiumClassRecord,getPcbLayerStack} from \"altiumts\";for(const filename of [\"ti-pmp22650-main.PcbDoc\",\"ti-pmp23595.PcbDoc\",\"ti-pmp22712.PcbDoc\"]){const d=parseAltiumBinaryPcbDoc(new Uint8Array(await Bun.file(\"../tests/fixtures/downloaded/\"+filename).arrayBuffer()));console.log(\"SCOPED_SOURCE_METADATA \"+JSON.stringify({filename,classes:d.records.filter(r=>r instanceof AltiumClassRecord).map(r=>({name:r.name,kind:r.classKind,members:r.members})),rules:d.rules.filter(r=>r.enabled!==false).map(r=>({name:r.name,kind:r.ruleKind,priority:r.priority,scope1:r.scope1Expression,scope2:r.scope2Expression,gap:r.clearanceMils,netScope:r.get(\"NETSCOPE\"),raw:r.ruleKind?.toUpperCase()===\"CLEARANCE\"?r.getString():undefined})),layers:getPcbLayerStack(d),nets:d.nets.map(n=>({name:n.name,id:n.get(\"ID\")}))}))}"};fs.mkdirSync('published-run',{recursive:true});for(const [name,content]of Object.entries(files))fs.writeFileSync('published-run/'+name,content)
+          NODE
+      - run: bun install
+        working-directory: published-run
+      - name: Run fresh routing and pouring with published packages
+        run: bun run metadata.ts
+        working-directory: published-run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ti-published-pour-results
+          path: |
+            published-run/results
+            published-run/bun.lock
