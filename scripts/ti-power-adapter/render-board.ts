@@ -20,7 +20,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     minTraceWidth: board.min_trace_width,
     minViaHoleDiameter: board.min_via_hole_diameter,
     minViaPadDiameter: board.min_via_pad_diameter,
-    isViaInPadAllowed: board.is_via_in_pad_allowed,
+    isViaInPadAllowed: false,
     allowBlindAndBuriedVias: board.allow_blind_and_buried_vias,
   }).filter(([, value]) => value !== undefined).map(([name, value]) => `${name}={${JSON.stringify(value)}}`).join(" ")
   const keepouts = imported.circuitJson.filter(e => e.type === "pcb_keepout")
@@ -33,11 +33,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     tsx = tsx.replace(opening, `${opening} nominalTraceWidth={${net.trace_width}}`)
   }
   let pourIndex = 0
-  const netlistOnly = circuitJson.filter(e => e.type === "source_trace").every(e => e.connected_source_net_ids.length === 1)
   const routingTsx = tsx.split("\n").filter(line => {
-    // The exporter emits each imported net as both a net membership list and
-    // a trace path. Net declarations already connect every authored terminal.
-    if (netlistOnly && line.trimStart().startsWith("<trace path=")) return false
     if (!line.trimStart().startsWith("<copperpour ")) return true
     const definition = imported.definitions[pourIndex++]
     if (!definition) throw new Error("Generated pour order no longer matches the import")
