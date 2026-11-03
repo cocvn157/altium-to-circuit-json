@@ -80,8 +80,15 @@ export function convertAltiumCopperAreas(
 
   return document.records.flatMap((record, recordIndex) => {
     if (record.getBoolean("KEEPOUT") === true) return []
+    if (
+      copperPourMode === "recompute" &&
+      (record instanceof AltiumRegionRecord ||
+        record instanceof AltiumFillRecord) &&
+      document.getPolygonForRecord(record)
+    ) {
+      return []
+    }
     if (record instanceof AltiumRegionRecord) {
-      if (copperPourMode === "recompute") return []
       return convertCopperRegion({
         layerMap,
         record,
@@ -107,7 +114,6 @@ export function convertAltiumCopperAreas(
       })
     }
     if (record instanceof AltiumFillRecord) {
-      if (copperPourMode === "recompute") return []
       return convertCopperFill({
         layerMap,
         record,

@@ -32,6 +32,7 @@ test("imports authored pour definitions and global clearance for recomputation",
     min_trace_to_pad_edge_clearance: 0.254,
     min_different_net_trace_edge_to_trace_edge_clearance: 0.254,
     min_pad_edge_to_pad_edge_clearance: 0.254,
+    min_via_edge_to_pad_edge_clearance: 0.254,
   })
   expect(
     recomputed.find((element) => element.type === "source_net"),

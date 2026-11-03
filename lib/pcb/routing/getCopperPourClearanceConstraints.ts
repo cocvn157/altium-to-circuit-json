@@ -33,6 +33,14 @@ export function getCopperPourClearanceConstraints(
     document,
     ruleKind: "BoardOutlineClearance",
   })?.clearanceMils
+  if (
+    boardEdgeClearanceMils !== undefined &&
+    (!Number.isFinite(boardEdgeClearanceMils) || boardEdgeClearanceMils < 0)
+  ) {
+    throw new Error(
+      "Altium board edge clearance must be finite and nonnegative",
+    )
+  }
   const clearanceMillimeters = milsToMillimeters(clearanceMils)
   return {
     ...(boardEdgeClearanceMils === undefined
@@ -43,5 +51,6 @@ export function getCopperPourClearanceConstraints(
     min_trace_to_pad_edge_clearance: clearanceMillimeters,
     min_different_net_trace_edge_to_trace_edge_clearance: clearanceMillimeters,
     min_pad_edge_to_pad_edge_clearance: clearanceMillimeters,
+    min_via_edge_to_pad_edge_clearance: clearanceMillimeters,
   }
 }

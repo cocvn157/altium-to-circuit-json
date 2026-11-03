@@ -76,6 +76,34 @@ Each stage has the standard converter contract: `step()`,
 `runUntilFinished()`, `finished`, and `getOutput()`. The parser boundary stays
 in `altiumts`; conversion stages consume typed Altium documents and records.
 
+## Copper pour definitions
+
+By default, PCB conversion preserves saved copper geometry. To prepare a board
+for fresh routing and pouring, use:
+
+```ts
+const circuitJson = convertAltiumPcbDocToCircuitJson(pcbDocument, {
+  copperPourMode: "recompute",
+  includeTraces: false,
+  includeVias: false,
+})
+```
+
+This imports the authored polygon boundaries, cutouts, nets, layers, and global
+clearances. Only saved fills and regions linked to a polygon are discarded;
+standalone authored copper is retained. Missing or scoped clearance rules are
+rejected. Custom thermals and pour priority are not mapped.
+
+The current TI power-reference boards contain scoped clearance rules, so full
+board conversion in this mode rejects them until those rules can be represented.
+
+This converter does not route traces or run a copper pour solver. Its output and
+SVG show input definitions, not a finished or clearance-verified pour. To compute
+new copper, convert the definitions to TSX with
+`convertCircuitJsonToTscircuit(circuitJson, { componentName: "ImportedBoard", copperPourMode: "recompute" })`
+from `circuit-json-to-tscircuit`, then render that TSX through core. Core performs
+the routing and copper pour computation.
+
 ## Current coverage
 
 PCB conversion currently emits:

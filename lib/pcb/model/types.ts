@@ -25,7 +25,7 @@ export interface ConvertAltiumPcbDocOptions {
   includeCadModels?: boolean
   includeComponents?: boolean
   includeCopperAreas?: boolean
-  /** Import authored polygon boundaries instead of saved fills for repouring. */
+  /** Import polygon definitions for repouring in core; this converter does not run a pour solver. */
   copperPourMode?: "preserve" | "recompute"
   includeCourtyards?: boolean
   includeDimensions?: boolean
@@ -63,6 +63,7 @@ export interface PcbRoutingConstraints {
     | "min_trace_to_pad_edge_clearance"
     | "min_different_net_trace_edge_to_trace_edge_clearance"
     | "min_pad_edge_to_pad_edge_clearance"
+    | "min_via_edge_to_pad_edge_clearance"
     | "min_via_hole_diameter"
     | "min_via_pad_diameter"
   >
