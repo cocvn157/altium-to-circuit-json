@@ -1,0 +1,45 @@
+import { createRequire } from "node:module"
+import { transpileModule, ModuleKind, JsxEmit } from "typescript"
+import { RootCircuit } from "@tscircuit/core"
+import type { AltiumPcbDocument } from "altiumts"
+import { convertCircuitJsonToTscircuit } from "circuit-json-to-tscircuit"
+import { createBoardConversionContext } from "tsx-source/board-conversion-context"
+import { readBoard } from "./read-board"
+import { computePours } from "./compute-pours"
+
+export async function renderBoard(document: AltiumPcbDocument, options: {
+  routingDisabled?: boolean
+  stage?: (name: string, details?: Record<string, unknown>) => void
+} = {}) {
+  const imported = readBoard(document)
+  const circuitJson = [...imported.circuitJson, ...imported.definitions.map(d => d.copper)]
+  const context = createBoardConversionContext({ circuitJson })
+  const tsx = convertCircuitJsonToTscircuit(circuitJson, { componentName: "ImportedBoard", copperPourMode: "preserve" })
+  let pourIndex = 0
+  const routingTsx = tsx.split("\n").filter(line => {
+    if (!line.trimStart().startsWith("<copperpour ")) return true
+    const definition = imported.definitions[pourIndex++]
+    if (!definition) throw new Error("Generated pour order no longer matches the import")
+    return definition.fixed
+  }).map(line => line.trimStart().startsWith("<copperpour ") ? line.replace("<copperpour ", "<copperpour unbroken ") : line).join("\n")
+    .replace("<board", options.routingDisabled ? "<board routingDisabled" : "<board")
+  if (pourIndex !== imported.definitions.length) throw new Error("A copper definition was omitted from TSX")
+  options.stage?.("converted", { definitions: imported.definitions.length, fixed: imported.definitions.filter(d => d.fixed).length, tsxCharacters: routingTsx.length })
+  const compiled = transpileModule(routingTsx, { compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.ReactJSX } }).outputText
+  const exports: { default?: () => unknown } = {}
+  new Function("require", "exports", compiled)(createRequire(import.meta.url), exports)
+  if (!exports.default) throw new Error("No converted TSX component")
+  const circuit = new RootCircuit()
+  circuit.on("solver:started", event => options.stage?.("solver_started", { solver: event.solverName }))
+  circuit.add(exports.default())
+  await circuit.renderUntilSettled()
+  const rendered = circuit.getCircuitJson().filter(e => e.type !== "pcb_copper_pour")
+  options.stage?.("core_rendered", { traces: rendered.filter(e => e.type === "pcb_trace").length })
+  const result = await computePours({
+    circuitJson: rendered, definitions: imported.definitions, rules: imported.rules,
+    runtimeNames: context.runtimeNetNameBySourceNetId,
+    originalNetNames: new Map(imported.circuitJson.filter(e => e.type === "source_net").map(e => [e.source_net_id, e.name])),
+  })
+  options.stage?.("poured", { pours: result.pours.length })
+  return { ...result, baseline: rendered, tsx: routingTsx }
+}

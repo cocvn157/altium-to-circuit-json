@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "altium-source/*": [
+        "../../lib/*"
+      ],
+      "tsx-source/*": [
+        "../../runtime-converter/lib/*"
+      ]
+    }
+  }
+}

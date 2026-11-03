@@ -1,0 +1,23 @@
+{
+  "name": "ti-power-rule-adapter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test tests"
+  },
+  "dependencies": {
+    "altium-to-circuit-json": "0.0.116",
+    "altiumts": "0.0.95",
+    "circuit-json-to-tscircuit": "0.0.100",
+    "@tscircuit/core": "0.0.2259",
+    "@tscircuit/copper-pour-solver": "0.0.67",
+    "circuit-json": "0.0.541",
+    "circuit-to-svg": "0.0.454",
+    "typescript": "5.9.3",
+    "@tscircuit/footprinter": "0.0.450",
+    "@tscircuit/checks": "0.0.269",
+    "@tscircuit/math-utils": "0.0.36",
+    "@tscircuit/circuit-json-util": "0.0.129",
+    "circuit-json-to-connectivity-map": "0.0.33"
+  }
+}
