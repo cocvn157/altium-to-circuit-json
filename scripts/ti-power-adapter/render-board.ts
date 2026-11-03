@@ -20,11 +20,12 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     minTraceWidth: board.min_trace_width,
     minViaHoleDiameter: board.min_via_hole_diameter,
     minViaPadDiameter: board.min_via_pad_diameter,
+    minViaEdgeToPadEdgeClearance: Math.max(board.min_via_edge_to_pad_edge_clearance ?? 0, board.min_pad_edge_to_pad_edge_clearance ?? .1),
     isViaInPadAllowed: board.is_via_in_pad_allowed,
     allowBlindAndBuriedVias: board.allow_blind_and_buried_vias,
   }).filter(([, value]) => value !== undefined).map(([name, value]) => `${name}={${JSON.stringify(value)}}`).join(" ")
   const keepouts = imported.circuitJson.filter(e => e.type === "pcb_keepout")
-  const circuitJson = expandSharedPadPorts(imported.circuitJson.filter(e => e.type !== "pcb_keepout"))
+  const circuitJson = expandSharedPadPorts([...imported.circuitJson.filter(e => e.type !== "pcb_keepout"), ...imported.definitions.map(d => d.copper)])
   const context = createBoardConversionContext({ circuitJson })
   let tsx = convertCircuitJsonToTscircuit(circuitJson, { componentName: "ImportedBoard", copperPourMode: "preserve" })
   for (const net of imported.circuitJson) if (net.type === "source_net" && net.trace_width !== undefined) {
@@ -32,7 +33,15 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     const opening = `<net name={${JSON.stringify(name)}}`
     tsx = tsx.replace(opening, `${opening} nominalTraceWidth={${net.trace_width}}`)
   }
-  const routingTsx = tsx.replace("<board", `<board ${routingProperties} ${options.routingDisabled ? "routingDisabled" : 'autorouter="auto-local" routeRemaining={true} placementDrcChecksDisabled'}`)
+  let pourIndex = 0
+  const routingTsx = tsx.split("\n").filter(line => {
+    if (!line.trimStart().startsWith("<copperpour ")) return true
+    const definition = imported.definitions[pourIndex++]
+    if (!definition) throw new Error("Generated pour order no longer matches the import")
+    return definition.fixed
+  }).map(line => line.trimStart().startsWith("<copperpour ") ? line.replace("<copperpour ", "<copperpour unbroken ") : line).join("\n")
+    .replace("<board", `<board ${routingProperties} ${options.routingDisabled ? "routingDisabled" : 'autorouter="auto-local" routeRemaining={true} placementDrcChecksDisabled'}`)
+  if (pourIndex !== imported.definitions.length) throw new Error("A copper definition was omitted from TSX")
   options.stage?.("converted", { definitions: imported.definitions.length, fixed: imported.definitions.filter(d => d.fixed).length, tsxCharacters: routingTsx.length })
   const compiled = transpileModule(routingTsx, { compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.ReactJSX } }).outputText
   const exports: { default?: () => Parameters<RootCircuit["add"]>[0] } = {}
