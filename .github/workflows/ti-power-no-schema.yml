@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sample: [21]
+        sample: [21, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
         env:
           TI_SAMPLE: ${{ matrix.sample }}
           TI_ROUTE: "1"
-        run: bun run run-native.ts
+        run: bun run summarize-routing-rules.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
