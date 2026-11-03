@@ -8,6 +8,7 @@ import { AutoroutingPipelineSolver } from "@tscircuit/capacity-autorouter"
 let captured: any
 let failure: unknown
 let lastPhase = ""
+const phaseVias: {phase:string; vias:any[]}[] = []
 const seen = new WeakSet<object>()
 
 function describeSolver(node: any, depth = 0): unknown {
@@ -15,7 +16,7 @@ function describeSolver(node: any, depth = 0): unknown {
   seen.add(node)
   const primitive = (value: unknown) => value === null || ["string", "number", "boolean"].includes(typeof value)
   const state = node.state && typeof node.state === "object" ? Object.fromEntries(Object.entries(node.state).filter(([key, value]) => primitive(value) && !/^(x|y|center|candidate)$/u.test(key))) : undefined
-  const childKeys = ["activeSubSolver", "portPointPathingSolver", "tinyPipelineSolver", "tinySolver", "graphSolver", "greedyFinalRouteSolver", "finalRouteSolver", "initialVisualizationSolver"]
+  const childKeys = ["activeSubSolver", "portPointPathingSolver", "tinyPipelineSolver", "solveGraph", "tinySolver", "graphSolver", "greedyFinalRouteSolver", "finalRouteSolver", "initialVisualizationSolver"]
   const children = childKeys.flatMap(key => {
     const child = node[key]
     return child && typeof child.step === "function" ? [{ key, detail: describeSolver(child, depth + 1) }] : []
@@ -26,7 +27,9 @@ function describeSolver(node: any, depth = 0): unknown {
     const item = Array.isArray(value) ? value[routeId] : undefined
     return typeof item === "string" && /route|connection/iu.test(key) ? [{ key, value: item }] : []
   }) : undefined
-  return { className: node.constructor?.name, iterations: node.iterations, maxIterations: node.MAX_ITERATIONS, failed: node.failed, solved: node.solved, error: node.error, state, keys: Object.keys(node), problemKeys: problem ? Object.keys(problem) : undefined, routeNames, children }
+  const attemptCounts = node.routeAttemptCountByRouteId
+  const attemptSummary = attemptCounts && problem ? Array.from(attemptCounts as number[]).map((attempts,id) => ({id,attempts,successes:node.routeSuccessCountByRouteId?.[id],metadata:problem.routeMetadata?.[id]})).sort((a,b)=>b.attempts-a.attempts).slice(0,12).map(({metadata,...item})=>({...item,metadata:metadata&&typeof metadata==="object"?Object.fromEntries(Object.entries(metadata).filter(([key,value])=>primitive(value)&&!/^(x|y)$/u.test(key))):metadata})) : undefined
+  return { attemptSummary, stats:node.stats, className: node.constructor?.name, iterations: node.iterations, maxIterations: node.MAX_ITERATIONS, failed: node.failed, solved: node.solved, error: node.error, state, keys: Object.keys(node), problemKeys: problem ? Object.keys(problem) : undefined, routeNames, children }
 }
 
 export function installRoutingProbe() {
@@ -39,6 +42,11 @@ export function installRoutingProbe() {
       const phase = this.getCurrentPhase()
       if (phase !== lastPhase) {
         lastPhase = phase
+        const hd = phase === "highDensityForceImproveSolver" ? this.highDensityRouteSolver?.routes : phase === "highDensityRepairSolver" ? this.highDensityForceImproveSolver?.getOutput() : phase === "highDensityStitchSolver" ? this.highDensityRepairSolver?.getOutput() : undefined
+        if (hd) phaseVias.push({phase,vias:hd.flatMap((route:any)=>(route.vias??[]).map((point:any)=>({point,connection:route.connectionName})))})
+        if (["traceSimplificationSolver","mutatedPreloadedTraceSimplificationSolver","traceWidthSolver","globalDrcForceImproveSolver","pipeline9JointDrcRepairSolver","effortCleanupSolver","powerTraceExpansionSolver","none"].includes(phase)) {
+          phaseVias.push({phase,vias:this.getNewTracesBeforePowerExpansion().flatMap((trace:any)=>trace.route.filter((point:any)=>point.route_type==="via").map((point:any)=>({point,connection:trace.connection_name})))})
+        }
         console.log("TI_ROUTING_PHASE " + JSON.stringify({phase, iterations:this.iterations}))
       }
       if (this.failed && !failure) {
@@ -51,7 +59,7 @@ export function installRoutingProbe() {
   Object.defineProperty(prototype, "getOutputSimplifiedPcbTraces", { value: function(this: any, ...args: unknown[]) {
     const traces = Reflect.apply(output, this, args)
     if (this.solved && !captured) {
-      captured = {input: structuredClone(this.originalSrj), pairs: structuredClone(this.srjWithPointPairs), traces: structuredClone(traces), phases: structuredClone(this.timeSpentOnPhase)}
+      captured = {escapeVias:structuredClone(this.escapeViaLocationSolver.createdEscapeVias),input: structuredClone(this.originalSrj), pairs: structuredClone(this.srjWithPointPairs), traces: structuredClone(traces), phases: structuredClone(this.timeSpentOnPhase)}
     }
     return traces
   } })
@@ -90,7 +98,7 @@ export async function getRoutingProbeReport(input: {circuitJson: any[]; errors: 
     const pad = pair.find((element: any) => element?.type === "pcb_smtpad" || element?.type === "pcb_plated_hole")
     if (!via || !pad) return []
     const nearest = viaPoints.map((item: any) => ({...item,distance:Math.hypot(item.point.x-via.x,item.point.y-via.y)})).sort((a: any,b: any)=>a.distance-b.distance)[0]
-    return [{message:error.message,coreDiameter:via.outer_diameter,coreHole:via.hole_diameter,coreLayers:via.layers,padWidth:pad.width,padHeight:pad.height,padRotation:pad.ccw_rotation,padCornerRadius:pad.corner_radius,relativeOffset:{x:via.x-pad.x,y:via.y-pad.y},nearestRawVia:nearest?{distance:nearest.distance,connection:nearest.trace.connection_name,diameter:nearest.point.via_diameter,outerDiameter:nearest.point.outer_diameter,hole:nearest.point.via_hole_diameter,fromLayer:nearest.point.from_layer,toLayer:nearest.point.to_layer,physicalLayers:nearest.point.layers}:undefined}]
+    return [{phaseHistory:phaseVias.map(stage=>{const item=stage.vias.map(item=>({...item,distance:Math.hypot(item.point.x-via.x,item.point.y-via.y)})).sort((a,b)=>a.distance-b.distance)[0];return {phase:stage.phase,count:stage.vias.length,nearest:item?{distance:item.distance,connection:item.connection,relativeToPad:{x:item.point.x-pad.x,y:item.point.y-pad.y}}:undefined}}),nearestEscape:captured.escapeVias.map((item:any)=>({distance:Math.hypot(item.x-via.x,item.y-via.y),sourceLayer:item.sourceLayer,targetLayer:item.targetLayer})).sort((a:any,b:any)=>a.distance-b.distance)[0],message:error.message,coreDiameter:via.outer_diameter,coreHole:via.hole_diameter,coreLayers:via.layers,padWidth:pad.width,padHeight:pad.height,padRotation:pad.ccw_rotation,padCornerRadius:pad.corner_radius,relativeOffset:{x:via.x-pad.x,y:via.y-pad.y},nearestRawVia:nearest?{distance:nearest.distance,connection:nearest.trace.connection_name,diameter:nearest.point.via_diameter,outerDiameter:nearest.point.outer_diameter,hole:nearest.point.via_hole_diameter,fromLayer:nearest.point.from_layer,toLayer:nearest.point.to_layer,physicalLayers:nearest.point.layers}:undefined}]
   })
-  return {outputCaptured:true,phases:captured.phases,rawViaCount:viaPoints.length,ownDrcErrors:evaluation.errors,ownViaPadErrors:evaluation.viaPadErrors,viaComparisons}
+  return {outputCaptured:true,allowBlindAndBuriedVias:captured.input.allowBlindAndBuriedVias,escapeViaCount:captured.escapeVias.length,phases:captured.phases,rawViaCount:viaPoints.length,ownDrcErrors:evaluation.errors,ownViaPadErrors:evaluation.viaPadErrors,viaComparisons}
 }
