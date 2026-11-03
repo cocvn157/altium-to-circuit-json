@@ -37,7 +37,7 @@ jobs:
       - run: bun run download-references
       - run: bun install
         working-directory: scripts/ti-power-adapter
-      - run: bun run prepare-solver.ts && bun test tests
+      - run: bun run prepare-solver.ts && bun test ./tests/*.test.ts
         working-directory: scripts/ti-power-adapter
       - name: Route through core and compute fresh copper
         working-directory: scripts/ti-power-adapter

@@ -8,6 +8,7 @@ import type { InputPad, InputPourRegion } from "./solver/lib/types"
 import type { CopperIdentity } from "./types"
 import type { PourDefinition } from "./read-board"
 import type { RuleResolver } from "./rules/RuleResolver"
+import { checkCopperPourIslands } from "@tscircuit/checks"
 
 export async function computePours(input: {
   circuitJson: AnyCircuitElement[]
@@ -98,5 +99,9 @@ export async function computePours(input: {
       covered_with_solder_mask: r.definition.copper.covered_with_solder_mask, ...metadata,
     }))
   })
-  return { circuitJson: [...circuitJson.filter(e => e.type !== "pcb_copper_pour"), ...pours], pours, definitions: resolved.length, fixed: resolved.filter(r => r.definition.fixed).length }
+  const combined = [...circuitJson.filter(e => e.type !== "pcb_copper_pour"), ...pours]
+  const fixedIds = new Set(resolved.filter(r => r.definition.fixed).map(r => r.definition.copper.pcb_copper_pour_id))
+  const floating = new Set(checkCopperPourIslands(combined).map(w => w.pcb_copper_pour_id).filter(id => !fixedIds.has(id)))
+  const connectedPours = pours.filter(p => !floating.has(p.pcb_copper_pour_id))
+  return { circuitJson: combined.filter(e => e.type !== "pcb_copper_pour" || !floating.has(e.pcb_copper_pour_id)), pours: connectedPours, definitions: resolved.length, fixed: resolved.filter(r => r.definition.fixed).length, removedIslands: floating.size }
 }
