@@ -26,6 +26,7 @@ try {
   const routingErrors=errors.filter(e=>/autorouting|trace|port_not_connected|via_clearance/u.test(e.type))
   const report={sample,routingEnabled:process.env.TI_ROUTE==="1",definitions:output.definitions,fixed:output.fixed,pours:output.pours.length,traces:output.circuitJson.filter(e=>e.type==="pcb_trace").length,shorts:shorts.length,fixedShorts:fixedShorts.length,addedShorts:shorts.length-fixedShorts.length,removedIslands:output.removedIslands,addedBoardEdgeErrors:afterEdges.length-beforeEdges.length,addedCutoutErrors:afterCutouts.length-beforeCutouts.length,errors:counts(errors),routingErrors:counts(routingErrors),autoroutingMessages:routingErrors.filter(e=>e.type==="pcb_autorouting_error").map(e=>e.message.slice(0,2000)),shortMessages:shorts.slice(0,3).map(e=>e.message.slice(0,500)),elapsedMs:Math.round(performance.now()-started)}
   Object.assign(report,{placementChecksRunAfterRouting:true,placementErrors:counts(placementErrors)})
+  Object.assign(report,{autorouterVersion:(await Bun.file("node_modules/@tscircuit/capacity-autorouter/package.json").json()).version})
   await Bun.write(`results/${sample}-report.json`,JSON.stringify(report,null,2))
   const board=output.circuitJson.find(e=>e.type==="pcb_board")!
   if (board.type!=="pcb_board"||!board.outline?.length) throw new Error("Missing rendered board outline")

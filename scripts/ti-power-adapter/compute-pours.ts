@@ -93,7 +93,7 @@ export async function computePours(input: {
   })
   const output = solver.getOutput()
   const pours: PcbCopperPour[] = resolved.flatMap((r, regionIndex): PcbCopperPour[] => {
-    const metadata = { source_net_id: r.net?.source_net_id, subcircuit_id: subcircuit }
+    const metadata = { source_net_id: r.definition.copper.source_net_id ? r.net?.source_net_id : undefined, subcircuit_id: subcircuit }
     // Keep authored fills/regions exactly; only polygon definitions are recomputed.
     if (r.definition.fixed) return [{ ...r.definition.copper, ...metadata }]
     return output.brep_shapes_by_region[regionIndex]!.map((shape, island) => ({
