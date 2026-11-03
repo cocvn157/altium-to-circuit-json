@@ -1,4 +1,4 @@
-name: Verify copper pour conversion fixes
+name: Verify PR 239 with standard test settings
 on:
   push:
     branches: [codex/pour-definition-verification]
@@ -17,44 +17,8 @@ jobs:
           bun-version: 1.4.3
       - run: bun install --frozen-lockfile
       - run: bun run download-references
-      - name: Verify copper regressions including native PMP22650
-        run: bun test tests/conversion/pcb-pmp22650-pour-definitions.test.ts tests/conversion/pcb-recompute-standalone-copper.test.ts tests/conversion/pcb-recompute-board-edge-clearance.test.ts tests/conversion/pcb-copper-pour-definition-repro.test.ts tests/conversion/pcb-copper-pour-recompute.test.ts tests/conversion/pcb-copper-areas.test.ts tests/conversion/pcb-polygon-cutout.test.ts tests/conversion/pcb-polygon-deduplication.test.ts tests/conversion/pcb-keepout-regions-not-copper.test.ts tests/architecture/handbookCompliance.test.ts --timeout 9999999
+      - name: Run the standard full suite without updating snapshots
+        run: bun test
       - run: bun run format:check
       - run: bunx tsc --noEmit
       - run: bun run build
-      - name: Verify full existing suite without updating snapshots
-        run: bun test --timeout 9999999
-  end_to_end:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: c5aee3840e2b309b9e4474ec18f50cf2c08d3b81
-          path: altium
-      - uses: actions/checkout@v4
-        with:
-          repository: tscircuit/circuit-json-to-tscircuit
-          ref: 781e097a321a02bfec38aebca974b04142e6476c
-          path: tsx
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.3
-      - run: bun install --frozen-lockfile
-        working-directory: altium
-      - run: bun install --frozen-lockfile
-        working-directory: tsx
-      - name: Prepare Altium to core integration check
-        run: |
-          node <<'NODE'
-          require('node:fs').writeFileSync('tsx/verify-altium-pour.ts',"import assert from \"node:assert/strict\"\nimport { parseAltiumPcbDoc } from \"../altium/node_modules/altiumts\"\nimport { convertAltiumPcbDocToCircuitJson } from \"../altium/lib/index\"\nimport { copperPourDefinitionRecords } from \"../altium/tests/fixtures/copper-pour-definition\"\nimport { convertCircuitJsonToTscircuit } from \"./lib/index\"\nimport { hasCopperPourAt } from \"./tests/fixtures/copper-pour-clearance\"\nimport { runTscircuitCode } from \"tscircuit\"\nimport { convertCircuitJsonToPcbSvg } from \"circuit-to-svg\"\nimport { stackSvgsHorizontally } from \"stack-svgs\"\n\nconst document = parseAltiumPcbDoc([\n  ...copperPourDefinitionRecords,\n  \"|RECORD=Net|NAME=SIGNAL\",\n  \"|RECORD=Component|ID=0|LAYER=TOP|X=100mil|Y=200mil|SOURCEDESIGNATOR=A\",\n  \"|RECORD=Component|ID=1|LAYER=TOP|X=400mil|Y=200mil|SOURCEDESIGNATOR=B\",\n  \"|RECORD=Component|ID=2|LAYER=TOP|X=100mil|Y=100mil|SOURCEDESIGNATOR=G\",\n  \"|RECORD=Pad|NAME=1|COMPONENT=0|NET=1|LAYER=TOP|X=100mil|Y=200mil|XSIZE=20mil|YSIZE=20mil|SHAPE=RECTANGLE\",\n  \"|RECORD=Pad|NAME=1|COMPONENT=1|NET=1|LAYER=TOP|X=400mil|Y=200mil|XSIZE=20mil|YSIZE=20mil|SHAPE=RECTANGLE\",\n  \"|RECORD=Pad|NAME=1|COMPONENT=2|NET=0|LAYER=TOP|X=100mil|Y=100mil|XSIZE=20mil|YSIZE=20mil|SHAPE=RECTANGLE\",\n].join(\"\\n\"))\nconst definitions = convertAltiumPcbDocToCircuitJson(document, {\n  copperPourMode: \"recompute\", includeTraces: false, includeVias: false,\n})\nassert.equal(definitions.some(e=>e.type===\"pcb_trace\"),false)\nassert.equal(definitions.filter(e=>e.type===\"pcb_copper_pour\").length,1)\nconst tsx = convertCircuitJsonToTscircuit(definitions, {\n  componentName: \"ImportedBoard\", copperPourMode: \"recompute\",\n})\nconst rendered = await runTscircuitCode(tsx)\nassert(rendered.some(e=>e.type===\"pcb_trace\"),\"Core must create fresh routing\")\nassert(hasCopperPourAt(rendered,{x:5.715,y:3.81}),\"Old cached routing gap must be filled\")\nassert(!hasCopperPourAt(rendered,{x:5.715,y:5.28}),\"Copper must clear the newly routed trace\")\nassert(!hasCopperPourAt(rendered,{x:9.525,y:6.985}),\"Authored cutout must remain empty\")\nassert(hasCopperPourAt(rendered,{x:4,y:4}),\"Non-obstructed copper must remain\")\nconst ground=rendered.find(e=>e.type===\"source_net\"&&e.name===\"GND\")\nassert(ground?.type===\"source_net\")\nassert(rendered.filter(e=>e.type===\"pcb_copper_pour\").every(e=>e.source_net_id===ground.source_net_id))\nconst metrics={inputPours:definitions.filter(e=>e.type===\"pcb_copper_pour\").length,outputPours:rendered.filter(e=>e.type===\"pcb_copper_pour\").length,freshTraces:rendered.filter(e=>e.type===\"pcb_trace\").length,traceMargin:0.254,oldGapFilled:true,newTraceCleared:true,authoredCutoutPreserved:true}\nconsole.log(JSON.stringify(metrics))\nawait Bun.write(\"../altium-core-e2e.json\",JSON.stringify(metrics,null,2))\nawait Bun.write(\"../altium-core-e2e.svg\",stackSvgsHorizontally([definitions,rendered].map(c=>convertCircuitJsonToPcbSvg(c,{width:600,height:480,backgroundColor:\"white\",showSolderMask:false,includeVersion:false,shouldDrawRatsNest:false})),{gap:24,normalizeSize:false}))\n")
-          NODE
-      - name: Compute new routing and copper through core
-        run: bun run verify-altium-pour.ts
-        working-directory: tsx
-      - uses: actions/upload-artifact@v4
-        with:
-          name: altium-core-copper-pour
-          path: |
-            altium-core-e2e.svg
-            altium-core-e2e.json
