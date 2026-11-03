@@ -12,6 +12,9 @@ test("PMP22650 keeps authored copper when replacing cached polygon fills", async
   const saved = convertAltiumCopperAreas(document)
   const definitions = convertAltiumPcbDocToCircuitJson(document, {
     copperPourMode: "recompute",
+    includeTraces: false,
+    includeVias: false,
+    includeCadModels: false,
   }).filter((element) => element.type === "pcb_copper_pour")
   const standaloneIds = [
     "pcb_copper_pour_altium_region_10774",
