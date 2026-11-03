@@ -39,7 +39,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     if (!definition) throw new Error("Generated pour order no longer matches the import")
     return definition.fixed
   }).map(line => line.trimStart().startsWith("<copperpour ") ? line.replace("<copperpour ", "<copperpour unbroken ") : line).join("\n")
-    .replace("<board", `<board ${routingProperties} ${options.routingDisabled ? "routingDisabled" : 'autorouter="auto-local" routeRemaining={true} placementDrcChecksDisabled'}`)
+    .replace("<board", `<board ${routingProperties} ${options.routingDisabled ? "routingDisabled" : 'autorouter="auto-local" autorouterEffortLevel="2x" routeRemaining={true} placementDrcChecksDisabled'}`)
   if (pourIndex !== imported.definitions.length) throw new Error("A copper definition was omitted from TSX")
   options.stage?.("converted", { definitions: imported.definitions.length, fixed: imported.definitions.filter(d => d.fixed).length, tsxCharacters: routingTsx.length })
   const compiled = transpileModule(routingTsx, { compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.ReactJSX } }).outputText

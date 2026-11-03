@@ -1,4 +1,5 @@
 import { mkdir } from "node:fs/promises"
+import { createHash } from "node:crypto"
 import { parseAltiumBinaryPcbDoc } from "altiumts"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import { checkCopperPourShorts, checkCopperToBoardEdgeClearance, checkCopperToCutoutClearance, checkPadPadClearance, runAllPlacementChecks, runAllRoutingChecks } from "@tscircuit/checks"
@@ -14,11 +15,14 @@ const started=performance.now()
 const stage=(name:string,details:Record<string,unknown>={})=>console.log("TI_ADAPTER_STAGE "+JSON.stringify({sample,name,elapsedMs:Math.round(performance.now()-started),...details}))
 await mkdir("results",{recursive:true})
 try {
-  const document=parseAltiumBinaryPcbDoc(new Uint8Array(await Bun.file(`../../tests/fixtures/downloaded/${files[sample]}`).arrayBuffer()))
-  const output=await renderBoard(document,{routingDisabled:process.env.TI_ROUTE!=="1",stage})
+  const bytes=new Uint8Array(await Bun.file(`../../tests/fixtures/downloaded/${files[sample]}`).arrayBuffer())
+  const sourcePcbDocSha256=createHash("sha256").update(bytes).digest("hex")
+  stage("source_loaded",{sourcePcbDocSha256})
+  const document=parseAltiumBinaryPcbDoc(bytes)
   // Manifold emits a micron grid. Preserve those edges during independent
   // boolean geometry checks rather than collapsing them at Flatten's default.
   Utils.setTolerance(1e-9)
+  const output=await renderBoard(document,{routingDisabled:process.env.TI_ROUTE!=="1",stage})
   stage("copper_checks_started")
   const shorts=checkCopperPourShorts(output.circuitJson)
   const fixedIds=new Set(output.pours.filter(p=>!p.pcb_copper_pour_id.includes("_computed_")).map(p=>p.pcb_copper_pour_id))
@@ -47,6 +51,7 @@ try {
   const report={sample,routingEnabled:process.env.TI_ROUTE==="1",definitions:output.definitions,fixed:output.fixed,pours:output.pours.length,traces:output.circuitJson.filter(e=>e.type==="pcb_trace").length,shorts:shorts.length,fixedShorts:fixedShorts.length,addedShorts:shorts.length-fixedShorts.length,removedIslands:output.removedIslands,addedBoardEdgeErrors:afterEdges.length-beforeEdges.length,addedCutoutErrors:afterCutouts.length-beforeCutouts.length,errors:counts(errors),routingErrors:counts(routingErrors),autoroutingMessages:coreRoutingErrors.filter(e=>e.type==="pcb_autorouting_error").map(e=>e.message.slice(0,2000)),shortMessages:shorts.slice(0,3).map(e=>e.message.slice(0,500)),elapsedMs:Math.round(performance.now()-started)}
   Object.assign(report,{placementChecksRunAfterRouting:true,placementErrors:counts(placementErrors)})
   Object.assign(report,{autorouterVersion:(await Bun.file("node_modules/@tscircuit/capacity-autorouter/package.json").json()).version})
+  Object.assign(report,{sourcePcbDocSha256,autorouterEffortLevel:"2x"})
   Object.assign(report,{coreRoutingErrors:counts(coreRoutingErrors),sourceFixedShorts:sourceShorts.length,newShortMessages:shorts.filter(e=>!sourceShortMessages.has(e.message)).slice(0,10).map(e=>e.message.slice(0,500)),finalConnectivityMessages:routingErrors.filter(e=>e.type==="pcb_port_not_connected_error").slice(0,4).map(e=>e.message.slice(0,500))})
   Object.assign(report,{newElectricalContacts:contactComparison.added.length,existingElectricalContacts:contactComparison.compatible.length,singletonPortDiagnostics:singletons.length,regressionErrors:counts(regressions),newElectricalContactMessages:contactComparison.added.map(e=>e.message.slice(0,500))})
   Object.assign(report,{runtimeMessages:errors.filter(e=>e.type==="source_runtime_error").map(e=>e.message.slice(0,2000)),sourcePadSpacingMessages:sourceSpacing.map(e=>e.message),regressionMessages:regressions.slice(0,6).map(e=>e.message)})
