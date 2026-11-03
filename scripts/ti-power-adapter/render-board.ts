@@ -26,7 +26,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
   if (pourIndex !== imported.definitions.length) throw new Error("A copper definition was omitted from TSX")
   options.stage?.("converted", { definitions: imported.definitions.length, fixed: imported.definitions.filter(d => d.fixed).length, tsxCharacters: routingTsx.length })
   const compiled = transpileModule(routingTsx, { compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.ReactJSX } }).outputText
-  const exports: { default?: () => unknown } = {}
+  const exports: { default?: () => Parameters<RootCircuit["add"]>[0] } = {}
   new Function("require", "exports", compiled)(createRequire(import.meta.url), exports)
   if (!exports.default) throw new Error("No converted TSX component")
   const circuit = new RootCircuit()

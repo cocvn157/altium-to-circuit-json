@@ -55,7 +55,7 @@ export class CopperPourPipelineSolver extends BasePipelineSolver<InputProblem> {
     for (const regionIndex of regionIndices) {
       const region = this.input.regionsForPour[regionIndex]!
       const isStatic = this.runtime.fixedRegions?.has(regionIndex) ?? false
-      const boardPolygon = getBoardPolygon(region)
+      const boardPolygon = getBoardPolygon(isStatic ? { ...region, board_edge_margin: 0 } : region)
 
       const padsForLayer = this.input.pads.filter(
         (p) => p.layer === region.layer,

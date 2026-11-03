@@ -87,7 +87,7 @@ export async function computePours(input: {
     pourClearance: ({ regionIndex, otherRegionIndex }) => rules.clearance(resolved[regionIndex]!.definition.identity, resolved[otherRegionIndex]!.definition.identity),
   })
   const output = solver.getOutput()
-  const pours: PcbCopperPour[] = resolved.flatMap((r, regionIndex) => {
+  const pours: PcbCopperPour[] = resolved.flatMap((r, regionIndex): PcbCopperPour[] => {
     const metadata = { source_net_id: r.net?.source_net_id, subcircuit_id: subcircuit }
     // Keep authored fills/regions exactly; only polygon definitions are recomputed.
     if (r.definition.fixed) return [{ ...r.definition.copper, ...metadata }]

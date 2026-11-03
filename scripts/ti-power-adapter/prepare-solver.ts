@@ -7,7 +7,7 @@ for (const entry of await readdir("solver/lib",{recursive:true,withFileTypes:tru
   if (!entry.isFile()||!entry.name.endsWith(".ts")) continue
   const path=resolve(entry.parentPath,entry.name)
   const source=await readFile(path,"utf8")
-  const patched=source.replaceAll(/"lib\/([^\"]+)"/gu,(_match,target)=>{
+  const patched=source.replaceAll(/"lib\/([^"]+)"/gu,(_match,target)=>{
     const path=relative(dirname(resolve(entry.parentPath,entry.name)),resolve("solver/lib",target))
     return JSON.stringify(path.startsWith(".")?path:`./${path}`)
   })

@@ -17,5 +17,10 @@
         "../../runtime-converter/lib/*"
       ]
     }
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "solver-overrides",
+    "solver-base"
+  ]
 }
