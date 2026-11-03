@@ -7,7 +7,7 @@
       "dependencies": {
         "@tscircuit/math-utils": "^0.0.9",
         "altiumts": "0.0.95",
-        "circuit-json": "0.0.486",
+        "circuit-json": "https://pkg.pr.new/circuit-json@4729012",
         "format-si-unit": "^0.0.11",
         "polygon-clipping": "^0.15.7",
         "schematic-symbols": "^0.0.238",
@@ -550,7 +550,7 @@
 
     "chownr": ["chownr@3.0.0", "", {}, "sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g=="],
 
-    "circuit-json": ["circuit-json@0.0.486", "", { "peerDependencies": { "format-si-unit": "*" } }, "sha512-ysieCIpt6x2p8n42jaLOgq9xPjro9CYb0kvOmfn0ji3VXQ2xkFZh7R1FZS4TARxjeDBSDwg4J4zl5uBNFilWbQ=="],
+    "circuit-json": ["circuit-json@https://pkg.pr.new/circuit-json@4729012", { "dependencies": { "zod": "3" }, "peerDependencies": { "format-si-unit": "*" } }, "sha512-X8gt4Wx4i3JNJaR80cp32Q9yvBYowZXynETASDOGJ9NFxVa86uZnB4C8wWyZnwQHbiAokTjV8U36pocSjfuc8w=="],
 
     "circuit-json-to-connectivity-map": ["circuit-json-to-connectivity-map@0.0.25", "", { "dependencies": { "@tscircuit/math-utils": "^0.0.9" }, "peerDependencies": { "typescript": "^5.9.3" } }, "sha512-6UhBtJX83HcGGzRr7DvyiidTYLXQCPEiftoyqH/YX4ZSuTyg/jP9DOpScMgi0Dq/SdYp6G1MzmOQNwvppw99eA=="],
 
