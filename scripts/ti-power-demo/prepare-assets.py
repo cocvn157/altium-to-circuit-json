@@ -8,7 +8,7 @@ for board in boards:
  sample=board['sample'];report=json.loads((reports/f'{sample}-report.json').read_text())
  if report['sample']!=sample or not report['routingEnabled'] or report['traces']<=0 or report['pours']<=report['fixed'] or report['newElectricalContacts'] or report['regressionErrors'] or report['runtimeMessages'] or report['routerProbe']['ownDrcErrors']:raise RuntimeError(f'Board {sample} failed validation')
  if report['sourcePcbDocSha256']!=expected[sample]:raise RuntimeError(f'Source mismatch for board {sample}')
- board.update(routed=True,connections=report['traces'],copperRecomputed=True,regressionErrors={},version=report['autorouterVersion'],seconds=report['elapsedMs']/1000,computedCopperAreas=report['pours']-report['fixed'],fixedCopperAreas=report['fixed'],sourcePcbDocSha256=report['sourcePcbDocSha256'],nativeHead='8a7f9222315ed991a9ed79b3b43e0ec6336df2ce',coreSourceFix='https://github.com/tscircuit/core/pull/5114')
+ board.update(routed=True,connections=report['traces'],copperRecomputed=True,regressionErrors={},version=report['autorouterVersion'],seconds=report['elapsedMs']/1000,computedCopperAreas=report['pours']-report['fixed'],fixedCopperAreas=report['fixed'],sourcePcbDocSha256=report['sourcePcbDocSha256'],nativeHead='95c6e7141e6cf1642b81db805ef2fdd4dcefeb6c',coreSourceFix='https://github.com/tscircuit/core/pull/5114')
 assets.mkdir(parents=True,exist_ok=True)
 for board in boards:
  sample=board['sample']

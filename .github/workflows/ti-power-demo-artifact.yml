@@ -24,7 +24,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 41730663067
+          run-id: 41736655488
           pattern: ti-power-no-schema-*
           merge-multiple: true
           path: scripts/ti-power-demo/native-results
