@@ -58,6 +58,7 @@ try {
   Object.assign(report,{newElectricalContacts:contactComparison.added.length,existingElectricalContacts:contactComparison.compatible.length,singletonPortDiagnostics:singletons.length,regressionErrors:counts(regressions),newElectricalContactMessages:contactComparison.added.map(e=>e.message.slice(0,500))})
   Object.assign(report,{runtimeMessages:errors.filter(e=>e.type==="source_runtime_error").map(e=>e.message.slice(0,2000)),sourcePadSpacingMessages:sourceSpacing.map(e=>e.message),regressionMessages:regressions.slice(0,6).map(e=>e.message)})
   Object.assign(report,{routerProbe:await getRoutingProbeReport({circuitJson:output.circuitJson,errors:routingErrors})})
+  Object.assign(report,{cutoutDiagnostics:routingErrors.filter(e=>"pcb_cutout_id" in e).map(e=>{const error=e as unknown as Record<string,unknown>;return {cutout:error.pcb_cutout_id,copper:error.pcb_element_id,gap:error.actual_clearance,required:error.minimum_clearance}})})
   await Bun.write(`results/${sample}-report.json`,JSON.stringify(report,null,2))
   const board=output.circuitJson.find(e=>e.type==="pcb_board")!
   if (board.type!=="pcb_board"||!board.outline?.length) throw new Error("Missing rendered board outline")

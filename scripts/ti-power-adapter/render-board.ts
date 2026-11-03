@@ -1,7 +1,7 @@
-import { Utils } from "@flatten-js/core"
 import { createRequire } from "node:module"
 import { transpileModule, ModuleKind, JsxEmit } from "typescript"
 import { RootCircuit } from "@tscircuit/core"
+import { Utils } from "@flatten-js/core"
 import type { AltiumPcbDocument } from "altiumts"
 import { convertCircuitJsonToTscircuit } from "circuit-json-to-tscircuit"
 import { createBoardConversionContext } from "tsx-source/board-conversion-context"
@@ -9,6 +9,7 @@ import { readBoard } from "./read-board"
 import { computePours } from "./compute-pours"
 import { ImportedKeepouts } from "./ImportedKeepouts"
 import { expandSharedPadPorts } from "./expand-shared-pad-ports"
+import { preserveCutoutRoutingClearance } from "./preserve-cutout-routing-clearance"
 
 export async function renderBoard(document: AltiumPcbDocument, options: {
   routingDisabled?: boolean
@@ -48,6 +49,8 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
   new Function("require", "exports", compiled)(createRequire(import.meta.url), exports)
   if (!exports.default) throw new Error("No converted TSX component")
   const circuit = new RootCircuit()
+  circuit.on("autorouting:start", event => preserveCutoutRoutingClearance({srj:event.simpleRouteJson,circuitJson:circuit.db.toArray()}))
+  // Preserve Manifold's micron-grid edges in core's final geometry checks.
   circuit.on("autorouting:end", () => Utils.setTolerance(1e-9))
   circuit.on("solver:started", event => options.stage?.("solver_started", { solver: event.solverName }))
   circuit.add(exports.default())

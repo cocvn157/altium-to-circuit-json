@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sample: [21]
+        sample: [21, 22, 23, 24, 25, 26]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
       - run: bun run download-references
       - run: bun install
         working-directory: scripts/ti-power-adapter
-      - run: bun run prepare-solver.ts && bun test ./tests/*.test.ts
+      - run: bun run prepare-solver.ts && bun run prepare-core.ts && bun test ./tests/*.test.ts
         working-directory: scripts/ti-power-adapter
       - name: Route through core and compute fresh copper
         working-directory: scripts/ti-power-adapter
