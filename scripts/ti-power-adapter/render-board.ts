@@ -1,3 +1,4 @@
+import { Utils } from "@flatten-js/core"
 import { createRequire } from "node:module"
 import { transpileModule, ModuleKind, JsxEmit } from "typescript"
 import { RootCircuit } from "@tscircuit/core"
@@ -47,6 +48,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
   new Function("require", "exports", compiled)(createRequire(import.meta.url), exports)
   if (!exports.default) throw new Error("No converted TSX component")
   const circuit = new RootCircuit()
+  circuit.on("autorouting:end", () => Utils.setTolerance(1e-9))
   circuit.on("solver:started", event => options.stage?.("solver_started", { solver: event.solverName }))
   circuit.add(exports.default())
   circuit._getBoard()!.add(new ImportedKeepouts({keepouts}))
