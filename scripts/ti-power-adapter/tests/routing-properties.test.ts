@@ -17,4 +17,6 @@ test("original minimum trace and via dimensions survive conversion into core", a
   expect(board.min_trace_width).toBeCloseTo(.1524)
   expect(board.min_via_pad_diameter).toBeCloseTo(.2032)
   expect(board.min_via_hole_diameter).toBeCloseTo(.1016)
+  const net=output.circuitJson.find(e=>e.type==="source_net"&&e.name==="GND")!
+  expect(net.type==="source_net"&&net.trace_width).toBeCloseTo(.254)
 },30000)

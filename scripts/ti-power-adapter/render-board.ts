@@ -6,6 +6,7 @@ import { convertCircuitJsonToTscircuit } from "circuit-json-to-tscircuit"
 import { createBoardConversionContext } from "tsx-source/board-conversion-context"
 import { readBoard } from "./read-board"
 import { computePours } from "./compute-pours"
+import { ImportedKeepouts } from "./ImportedKeepouts"
 
 export async function renderBoard(document: AltiumPcbDocument, options: {
   routingDisabled?: boolean
@@ -21,9 +22,15 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     isViaInPadAllowed: board.is_via_in_pad_allowed,
     allowBlindAndBuriedVias: board.allow_blind_and_buried_vias,
   }).filter(([, value]) => value !== undefined).map(([name, value]) => `${name}={${JSON.stringify(value)}}`).join(" ")
-  const circuitJson = [...imported.circuitJson, ...imported.definitions.map(d => d.copper)]
+  const keepouts = imported.circuitJson.filter(e => e.type === "pcb_keepout")
+  const circuitJson = [...imported.circuitJson.filter(e => e.type !== "pcb_keepout"), ...imported.definitions.map(d => d.copper)]
   const context = createBoardConversionContext({ circuitJson })
-  const tsx = convertCircuitJsonToTscircuit(circuitJson, { componentName: "ImportedBoard", copperPourMode: "preserve" })
+  let tsx = convertCircuitJsonToTscircuit(circuitJson, { componentName: "ImportedBoard", copperPourMode: "preserve" })
+  for (const net of imported.circuitJson) if (net.type === "source_net" && net.trace_width !== undefined) {
+    const name = context.runtimeNetNameBySourceNetId.get(net.source_net_id) ?? net.name
+    const opening = `<net name={${JSON.stringify(name)}}`
+    tsx = tsx.replace(opening, `${opening} nominalTraceWidth={${net.trace_width}}`)
+  }
   let pourIndex = 0
   const routingTsx = tsx.split("\n").filter(line => {
     if (!line.trimStart().startsWith("<copperpour ")) return true
@@ -51,6 +58,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
   })
   circuit.on("solver:started", event => options.stage?.("solver_started", { solver: event.solverName }))
   circuit.add(exports.default())
+  circuit._getBoard()!.add(new ImportedKeepouts({keepouts}))
   await circuit.renderUntilSettled()
   const rendered = circuit.getCircuitJson().filter(e => e.type !== "pcb_copper_pour")
   options.stage?.("core_rendered", { traces: rendered.filter(e => e.type === "pcb_trace").length })
