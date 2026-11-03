@@ -10,9 +10,9 @@ test("PMP22650 keeps authored copper when replacing cached polygon fills", async
     await readReferenceBytes(TI_POWER_REFERENCE_PCB_FILENAMES.pmp22650),
   )
   const saved = convertAltiumCopperAreas(document)
-  const definitions = convertAltiumCopperAreas(document, {
+  const definitions = convertAltiumPcbDocToCircuitJson(document, {
     copperPourMode: "recompute",
-  })
+  }).filter((element) => element.type === "pcb_copper_pour")
   const standaloneIds = [
     "pcb_copper_pour_altium_region_10774",
     "pcb_copper_pour_altium_region_10917",
@@ -30,10 +30,18 @@ test("PMP22650 keeps authored copper when replacing cached polygon fills", async
     definitions.filter(
       (pour) => !pour.pcb_copper_pour_id.includes("_polygon_"),
     ),
-  ).toEqual(standalone)
-
-  // The copper-stage regression is independent of the documented rule limitation.
-  expect(() =>
-    convertAltiumPcbDocToCircuitJson(document, { copperPourMode: "recompute" }),
-  ).toThrow("does not support scoped Altium clearance rules")
+  ).toEqual(
+    standalone.map((pour) =>
+      expect.objectContaining({
+        ...pour,
+        source_net_id: expect.any(String),
+        is_static: true,
+      }),
+    ),
+  )
+  expect(
+    definitions
+      .filter((pour) => !pour.is_static)
+      .every((pour) => pour.board_edge_margin === 0.635),
+  ).toBe(true)
 }, 30000)

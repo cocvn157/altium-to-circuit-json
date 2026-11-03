@@ -2,21 +2,9 @@ import type { AltiumPcbDocument } from "altiumts"
 import { milsToMillimeters } from "../geometry"
 import type { PcbRoutingConstraints } from "../model"
 import { getHighestPriorityGlobalRule } from "./getHighestPriorityGlobalRule"
-import { isAllScope } from "./isAllScope"
 export function getCopperPourClearanceConstraints(
   document: AltiumPcbDocument,
 ): PcbRoutingConstraints["pcbBoard"] {
-  const hasScopedClearance = document.rules.some(
-    (rule) =>
-      rule.enabled !== false &&
-      rule.ruleKind?.toUpperCase() === "CLEARANCE" &&
-      (!isAllScope(rule.scope1Expression) ||
-        !isAllScope(rule.scope2Expression)),
-  )
-  if (hasScopedClearance)
-    throw new Error(
-      "Copper pour recomputation does not support scoped Altium clearance rules",
-    )
   const clearanceMils = getHighestPriorityGlobalRule({
     document,
     ruleKind: "Clearance",

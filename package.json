@@ -46,7 +46,7 @@
   "dependencies": {
     "@tscircuit/math-utils": "^0.0.9",
     "altiumts": "0.0.95",
-    "circuit-json": "0.0.486",
+    "circuit-json": "https://pkg.pr.new/circuit-json@4729012",
     "format-si-unit": "^0.0.11",
     "polygon-clipping": "^0.15.7",
     "schematic-symbols": "^0.0.238",

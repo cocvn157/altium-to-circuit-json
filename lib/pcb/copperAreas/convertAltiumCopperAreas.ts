@@ -14,6 +14,7 @@ import { convertCopperFill } from "./convertCopperFill"
 import { convertCopperPolygon } from "./convertCopperPolygon"
 import { convertCopperRegion } from "./convertCopperRegion"
 import { isContourInsideContour } from "./isContourInsideContour"
+import { AltiumCopperClearanceResolver } from "../routing/AltiumCopperClearanceResolver"
 
 export function convertAltiumCopperAreas(
   document: AltiumPcbDocument,
@@ -27,6 +28,14 @@ export function convertAltiumCopperAreas(
     getSourceNetId?: (record: AltiumRecord) => string | undefined
   } = {},
 ): PcbCopperPour[] {
+  const clearanceResolver =
+    copperPourMode === "recompute"
+      ? new AltiumCopperClearanceResolver({
+          document,
+          layerMap,
+          getSourceNetId,
+        })
+      : undefined
   const polygonsWithCopperRegions = new Set<AltiumPolygonRecord>()
   const cutoutsByPolygon = new Map<AltiumPolygonRecord, AltiumRegionRecord[]>()
   const polygonContours = new Map<
@@ -94,7 +103,10 @@ export function convertAltiumCopperAreas(
         record,
         recordIndex,
         sourceNetId: getSourceNetId(record),
-      })
+      }).map((pour) => ({
+        ...pour,
+        ...clearanceResolver?.getProperties(record),
+      }))
     }
     if (record instanceof AltiumPolygonRecord) {
       const polygonIndex = polygonIndexes.get(record)
@@ -111,7 +123,10 @@ export function convertAltiumCopperAreas(
         polygonIndex,
         record,
         sourceNetId: getSourceNetId(record),
-      })
+      }).map((pour) => ({
+        ...pour,
+        ...clearanceResolver?.getProperties(record),
+      }))
     }
     if (record instanceof AltiumFillRecord) {
       return convertCopperFill({
@@ -119,7 +134,10 @@ export function convertAltiumCopperAreas(
         record,
         recordIndex,
         sourceNetId: getSourceNetId(record),
-      })
+      }).map((pour) => ({
+        ...pour,
+        ...clearanceResolver?.getProperties(record),
+      }))
     }
     return []
   })

@@ -89,13 +89,16 @@ const circuitJson = convertAltiumPcbDocToCircuitJson(pcbDocument, {
 })
 ```
 
-This imports the authored polygon boundaries, cutouts, nets, layers, and global
-clearances. Only saved fills and regions linked to a polygon are discarded;
-standalone authored copper is retained. Missing or scoped clearance rules are
-rejected. Custom thermals and pour priority are not mapped.
+This imports authored polygon boundaries, cutouts, nets, layers, and copper
+clearances. Net classes, net names, layer selectors, object kinds, rule priorities,
+and object-clearance matrices are resolved to per-pour clearance rules. Polygon
+board-edge rules are preserved separately. Unsupported selectors or rule modes
+are rejected rather than replaced by a global gap.
 
-The current TI power-reference boards contain scoped clearance rules, so full
-board conversion in this mode rejects them until those rules can be represented.
+Only saved fills and regions linked to a polygon are discarded. Standalone
+authored copper is marked static and retains its geometry. These clearance rules
+govern regenerated copper; custom thermals, polygon priority, and scoped
+trace-to-trace routing rules are not mapped.
 
 This converter does not route traces or run a copper pour solver. Its output and
 SVG show input definitions, not a finished or clearance-verified pour. To compute

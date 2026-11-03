@@ -30,7 +30,9 @@ test.each(["", "|POLYGON=65535", "|POLYGON=-1", "|POLYGON=42"])(
         pcb_copper_pour_id: "pcb_copper_pour_altium_polygon_0",
         layer: "top",
       }),
-      ...standalone,
+      ...standalone.map((pour) =>
+        expect.objectContaining({ ...pour, is_static: true }),
+      ),
     ])
     expect(standalone).toEqual([
       expect.objectContaining({
