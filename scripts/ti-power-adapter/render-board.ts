@@ -39,7 +39,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     if (!definition) throw new Error("Generated pour order no longer matches the import")
     return definition.fixed
   }).map(line => line.trimStart().startsWith("<copperpour ") ? line.replace("<copperpour ", "<copperpour unbroken ") : line).join("\n")
-    .replace("<board", `<board ${routingProperties} ${options.routingDisabled ? "routingDisabled" : 'autorouter="auto-local" autorouterEffortLevel="2x" routeRemaining={true} placementDrcChecksDisabled'}`)
+    .replace("<board", `<board ${routingProperties} ${options.routingDisabled ? "routingDisabled" : 'autorouter="auto-local" routeRemaining={true} placementDrcChecksDisabled'}`)
   if (pourIndex !== imported.definitions.length) throw new Error("A copper definition was omitted from TSX")
   options.stage?.("converted", { definitions: imported.definitions.length, fixed: imported.definitions.filter(d => d.fixed).length, tsxCharacters: routingTsx.length })
   const compiled = transpileModule(routingTsx, { compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.ReactJSX } }).outputText
@@ -61,7 +61,13 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
   circuit.add(exports.default())
   circuit._getBoard()!.add(new ImportedKeepouts({keepouts}))
   await circuit.renderUntilSettled()
-  const rendered = circuit.getCircuitJson().filter(e => e.type !== "pcb_copper_pour")
+  const rendered = circuit.getCircuitJson().filter(e => e.type !== "pcb_copper_pour").map(element => element.type !== "pcb_trace" ? element : {
+    ...element, route: element.route.map(point => {
+      if (point.route_type !== "wire") return point
+      const { is_inside_copper_pour, copper_pour_id, ...wire } = point
+      return wire
+    }),
+  })
   options.stage?.("core_rendered", { traces: rendered.filter(e => e.type === "pcb_trace").length })
   const result = await computePours({
     circuitJson: rendered, definitions: imported.definitions, rules: imported.rules,

@@ -23,6 +23,10 @@ test("published converters and core route first, then fresh copper fills old cac
   expect(output.definitions).toBe(1)
   expect(output.circuitJson.some(e=>e.type==="pcb_trace")).toBe(true)
   expect(output.pours.length).toBeGreaterThan(0)
+  const pourIds = new Set(output.pours.map(p => p.pcb_copper_pour_id))
+  for (const trace of output.circuitJson) if (trace.type === "pcb_trace") for (const point of trace.route) {
+    if (point.route_type === "wire" && point.copper_pour_id) expect(pourIds.has(point.copper_pour_id)).toBe(true)
+  }
   expect(hasCopperPourAt(output.circuitJson, {x:5.715,y:3.81})).toBe(true)
   expect(hasCopperPourAt(output.circuitJson, {x:5.715,y:5.28})).toBe(false)
   // Existing schema fields only: no original-rule metadata survives into the result.
