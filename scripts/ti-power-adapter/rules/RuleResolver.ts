@@ -8,6 +8,9 @@ import { getAltiumNetClassNames } from "./getAltiumNetClassNames"
 import { getAltiumComponentClassNames } from "./getAltiumComponentClassNames"
 
 type ClearancePairKey = string
+type NativeNetName = string
+type NativeComponentName = string
+type NativeClassName = string
 interface CompiledRule {
   record: AltiumRuleRecord
   first: AltiumClearanceQuery
@@ -19,8 +22,8 @@ interface CompiledRule {
 export class RuleResolver {
   private readonly layerMap
   private readonly rules: CompiledRule[]
-  private readonly netClasses = new Map<string, ReadonlySet<string>>()
-  private readonly componentClasses = new Map<string, ReadonlySet<string>>()
+  private readonly netClasses = new Map<NativeNetName, ReadonlySet<NativeClassName>>()
+  private readonly componentClasses = new Map<NativeComponentName, ReadonlySet<NativeClassName>>()
   private readonly cache = new Map<ClearancePairKey, number>()
 
   constructor(private readonly document: AltiumPcbDocument) {

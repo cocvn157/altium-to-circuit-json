@@ -8,13 +8,17 @@ import type { InputPad, InputPourRegion } from "./solver/lib/types"
 import type { CopperIdentity } from "./types"
 import type { PourDefinition } from "./read-board"
 import type { RuleResolver } from "./rules/RuleResolver"
+
+type SourceNetId = SourceNet["source_net_id"]
+type NetName = SourceNet["name"]
+type ConnectivityKey = InputPad["connectivityKey"]
 import { checkCopperPourIslands } from "@tscircuit/checks"
 
 export async function computePours(input: {
   circuitJson: AnyCircuitElement[]
   definitions: PourDefinition[]
-  runtimeNames: ReadonlyMap<string, string>
-  originalNetNames: ReadonlyMap<string, string>
+  runtimeNames: ReadonlyMap<SourceNetId, NetName>
+  originalNetNames: ReadonlyMap<SourceNetId, NetName>
   rules: RuleResolver
 }) {
   const { circuitJson, definitions, runtimeNames, originalNetNames, rules } = input
@@ -25,9 +29,9 @@ export async function computePours(input: {
   const sourceNets = circuitJson.filter((e): e is SourceNet => e.type === "source_net")
   const netsByName = new Map(sourceNets.map(e => [e.name, e]))
   const elements = new Map(circuitJson.map(e => [getElementId(e), e]))
-  const originalNameByRuntime = new Map<string, string>()
+  const originalNameByRuntime = new Map<NetName, NetName>()
   for (const [id, name] of originalNetNames) originalNameByRuntime.set(runtimeNames.get(id) ?? name, name)
-  const originalNetByKey = new Map<string, string>()
+  const originalNetByKey = new Map<ConnectivityKey, NetName>()
   for (const net of sourceNets) {
     const key = connectivity.getSubcircuitConnectivityKeyForId(net.source_net_id)
     if (key) originalNetByKey.set(key, originalNameByRuntime.get(net.name) ?? net.name)
