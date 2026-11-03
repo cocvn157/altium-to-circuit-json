@@ -20,8 +20,10 @@ export function convertAltiumCopperAreas(
   {
     layerMap = new PcbCopperLayerMap(document),
     getSourceNetId = () => undefined,
+    copperPourMode = "preserve",
   }: {
     layerMap?: PcbCopperLayerMap
+    copperPourMode?: "preserve" | "recompute"
     getSourceNetId?: (record: AltiumRecord) => string | undefined
   } = {},
 ): PcbCopperPour[] {
@@ -79,6 +81,7 @@ export function convertAltiumCopperAreas(
   return document.records.flatMap((record, recordIndex) => {
     if (record.getBoolean("KEEPOUT") === true) return []
     if (record instanceof AltiumRegionRecord) {
+      if (copperPourMode === "recompute") return []
       return convertCopperRegion({
         layerMap,
         record,
@@ -91,7 +94,7 @@ export function convertAltiumCopperAreas(
       if (
         record.shelved === true ||
         polygonIndex === undefined ||
-        polygonsWithCopperRegions.has(record)
+        (copperPourMode === "preserve" && polygonsWithCopperRegions.has(record))
       ) {
         return []
       }
@@ -104,6 +107,7 @@ export function convertAltiumCopperAreas(
       })
     }
     if (record instanceof AltiumFillRecord) {
+      if (copperPourMode === "recompute") return []
       return convertCopperFill({
         layerMap,
         record,
