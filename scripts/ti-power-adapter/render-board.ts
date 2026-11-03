@@ -39,6 +39,16 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
   new Function("require", "exports", compiled)(createRequire(import.meta.url), exports)
   if (!exports.default) throw new Error("No converted TSX component")
   const circuit = new RootCircuit()
+  if (imported.definitions.some(d => d.fixed)) circuit.on("autorouting:start", event => {
+    // Every unbroken pour in this render is authored fixed copper. Its shape
+    // cannot be repoured around a foreign via after routing.
+    let count = 0
+    for (const obstacle of event.simpleRouteJson.obstacles) if (obstacle.isCopperPour) {
+      obstacle.isCopperPour = false
+      count++
+    }
+    options.stage?.("fixed_copper_reserved", {obstacles: count})
+  })
   circuit.on("solver:started", event => options.stage?.("solver_started", { solver: event.solverName }))
   circuit.add(exports.default())
   await circuit.renderUntilSettled()
@@ -50,5 +60,5 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     originalNetNames: new Map(imported.circuitJson.filter(e => e.type === "source_net").map(e => [e.source_net_id, e.name])),
   })
   options.stage?.("poured", { pours: result.pours.length })
-  return { ...result, baseline: rendered, tsx: routingTsx }
+  return { ...result, baseline: rendered, sourceControl: [...imported.circuitJson, ...imported.definitions.filter(d => d.fixed).map(d => d.copper)], tsx: routingTsx }
 }
