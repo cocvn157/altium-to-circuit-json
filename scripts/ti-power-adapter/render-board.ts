@@ -20,7 +20,6 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     minTraceWidth: board.min_trace_width,
     minViaHoleDiameter: board.min_via_hole_diameter,
     minViaPadDiameter: board.min_via_pad_diameter,
-    minViaEdgeToPadEdgeClearance: Math.max(board.min_via_edge_to_pad_edge_clearance ?? 0, board.min_pad_edge_to_pad_edge_clearance ?? .1),
     isViaInPadAllowed: board.is_via_in_pad_allowed,
     allowBlindAndBuriedVias: board.allow_blind_and_buried_vias,
   }).filter(([, value]) => value !== undefined).map(([name, value]) => `${name}={${JSON.stringify(value)}}`).join(" ")

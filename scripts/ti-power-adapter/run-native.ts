@@ -1,4 +1,4 @@
-import { getNativeViaDiagnostics } from "./native-via-diagnostics"
+import { installRoutingProbe, getRoutingProbeReport } from "./routing-probe"
 import { mkdir } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import { parseAltiumBinaryPcbDoc } from "altiumts"
@@ -11,6 +11,7 @@ import { getSingletonPortDiagnostics } from "./get-singleton-port-diagnostics"
 import { isExistingPadSpacing } from "./is-existing-pad-spacing"
 
 const files: Record<number, string> = {21:"ti-pmp23595.PcbDoc",22:"ti-pmp23653-main.PcbDoc",23:"ti-pmp23653-planar-transformer.PcbDoc",24:"ti-pmp22650-main.PcbDoc",25:"ti-pmp22712.PcbDoc",26:"ti-pmp22773.PcbDoc"}
+installRoutingProbe()
 const sample=Number(process.env.TI_SAMPLE)
 const started=performance.now()
 const stage=(name:string,details:Record<string,unknown>={})=>console.log("TI_ADAPTER_STAGE "+JSON.stringify({sample,name,elapsedMs:Math.round(performance.now()-started),...details}))
@@ -56,7 +57,7 @@ try {
   Object.assign(report,{coreRoutingErrors:counts(coreRoutingErrors),sourceFixedShorts:sourceShorts.length,newShortMessages:shorts.filter(e=>!sourceShortMessages.has(e.message)).slice(0,10).map(e=>e.message.slice(0,500)),finalConnectivityMessages:routingErrors.filter(e=>e.type==="pcb_port_not_connected_error").slice(0,4).map(e=>e.message.slice(0,500))})
   Object.assign(report,{newElectricalContacts:contactComparison.added.length,existingElectricalContacts:contactComparison.compatible.length,singletonPortDiagnostics:singletons.length,regressionErrors:counts(regressions),newElectricalContactMessages:contactComparison.added.map(e=>e.message.slice(0,500))})
   Object.assign(report,{runtimeMessages:errors.filter(e=>e.type==="source_runtime_error").map(e=>e.message.slice(0,2000)),sourcePadSpacingMessages:sourceSpacing.map(e=>e.message),regressionMessages:regressions.slice(0,6).map(e=>e.message)})
-  Object.assign(report,{viaPadDiagnostics:getNativeViaDiagnostics(output.circuitJson,routingErrors)})
+  Object.assign(report,{routerProbe:await getRoutingProbeReport({circuitJson:output.circuitJson,errors:routingErrors})})
   await Bun.write(`results/${sample}-report.json`,JSON.stringify(report,null,2))
   const board=output.circuitJson.find(e=>e.type==="pcb_board")!
   if (board.type!=="pcb_board"||!board.outline?.length) throw new Error("Missing rendered board outline")
