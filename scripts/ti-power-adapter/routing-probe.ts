@@ -15,7 +15,7 @@ function describeSolver(node: any, depth = 0): unknown {
   seen.add(node)
   const primitive = (value: unknown) => value === null || ["string", "number", "boolean"].includes(typeof value)
   const state = node.state && typeof node.state === "object" ? Object.fromEntries(Object.entries(node.state).filter(([key, value]) => primitive(value) && !/^(x|y|center|candidate)$/u.test(key))) : undefined
-  const childKeys = ["activeSubSolver", "tinyPipelineSolver", "tinySolver", "graphSolver", "greedyFinalRouteSolver", "finalRouteSolver", "initialVisualizationSolver"]
+  const childKeys = ["activeSubSolver", "portPointPathingSolver", "tinyPipelineSolver", "tinySolver", "graphSolver", "greedyFinalRouteSolver", "finalRouteSolver", "initialVisualizationSolver"]
   const children = childKeys.flatMap(key => {
     const child = node[key]
     return child && typeof child.step === "function" ? [{ key, detail: describeSolver(child, depth + 1) }] : []
