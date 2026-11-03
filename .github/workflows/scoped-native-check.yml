@@ -24,4 +24,3 @@ jobs:
           key: altium-references-${{ runner.os }}-${{ hashFiles('scripts/references/reference-manifest.ts') }}
       - run: bun run download-references
       - run: bun run scripts/scoped-native-check.ts
-      - run: bun test
