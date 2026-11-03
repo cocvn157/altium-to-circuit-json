@@ -6,6 +6,7 @@ import { convertAltiumCopperAreas } from "altium-source/pcb/copperAreas"
 import { PcbCopperLayerMap } from "altium-source/pcb/layers"
 import type { CopperIdentity } from "./types"
 import { RuleResolver } from "./rules/RuleResolver"
+import { preserveSlotDimensions } from "./preserve-slot-dimensions"
 
 export interface PourDefinition {
   copper: PcbCopperPour
@@ -16,9 +17,9 @@ export interface PourDefinition {
 export function readBoard(document: AltiumPcbDocument) {
   // The supported no-copper mode leaves the original scoped rules untouched.
   // Their interpretation belongs to this job, not to a serialized schema field.
-  const circuitJson = convertAltiumPcbDocToCircuitJson(document, {
+  const circuitJson = preserveSlotDimensions(document, convertAltiumPcbDocToCircuitJson(document, {
     includeCopperAreas: false, includeTraces: false, includeVias: false, includeCadModels: false,
-  })
+  }))
   const netIds = new Map(document.nets.map((net, i) => [net, `source_net_altium_pcb_${i}`]))
   const getSourceNetId = (record: AltiumRecord) => {
     const parent = document.getPolygonForRecord(record)

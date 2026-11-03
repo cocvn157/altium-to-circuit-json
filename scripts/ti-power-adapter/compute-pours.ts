@@ -13,6 +13,7 @@ type SourceNetId = SourceNet["source_net_id"]
 type NetName = SourceNet["name"]
 type ConnectivityKey = InputPad["connectivityKey"]
 import { checkCopperPourIslands } from "@tscircuit/checks"
+import { expandBarrelLayers } from "./expand-barrel-layers"
 
 export async function computePours(input: {
   circuitJson: AnyCircuitElement[]
@@ -57,13 +58,17 @@ export async function computePours(input: {
   })
   // Extract pads once per layer instead of rebuilding their connectivity for every pour.
   const pads: InputPad[] = []
+  const obstacleCircuitJson = expandBarrelLayers(circuitJson)
   for (const layer of new Set(resolved.map(r => r.definition.copper.layer))) {
     const net = sourceNets[0]
     if (!net) throw new Error("No source nets in rendered board")
-    pads.push(...convertCircuitJsonToInputProblem(circuitJson, {
+    pads.push(...convertCircuitJsonToInputProblem(obstacleCircuitJson, {
       layer, subcircuit_id: subcircuit, source_net_id: net.source_net_id,
       pad_margin: 0, trace_margin: 0, outline: board.outline,
     }).pads)
+    for (const keepout of circuitJson) if (keepout.type === "pcb_keepout" && keepout.shape === "outline" && keepout.layers.includes(layer) && keepout.stroke_width > 0) {
+      pads.push({shape: "trace", padId: keepout.pcb_keepout_id, connectivityKey: `keepout:${keepout.pcb_keepout_id}`, layer, width: keepout.stroke_width, segments: keepout.outline})
+    }
   }
   const identityForPad = (pad: InputPad): CopperIdentity => {
     const element = elements.get(pad.padId)

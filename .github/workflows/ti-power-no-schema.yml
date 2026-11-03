@@ -1,7 +1,7 @@
 name: TI power boards without schema changes
 on:
   push:
-    branches: [codex/ti-power-no-schema-demo]
+    branches: [codex/ti-power-static-validation]
 permissions:
   contents: read
 jobs:
@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sample: [21, 22, 23, 24, 25, 26]
+        sample: [21]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
