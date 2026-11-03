@@ -7,6 +7,7 @@ import { createBoardConversionContext } from "tsx-source/board-conversion-contex
 import { readBoard } from "./read-board"
 import { computePours } from "./compute-pours"
 import { ImportedKeepouts } from "./ImportedKeepouts"
+import { expandSharedPadPorts } from "./expand-shared-pad-ports"
 
 export async function renderBoard(document: AltiumPcbDocument, options: {
   routingDisabled?: boolean
@@ -23,7 +24,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     allowBlindAndBuriedVias: board.allow_blind_and_buried_vias,
   }).filter(([, value]) => value !== undefined).map(([name, value]) => `${name}={${JSON.stringify(value)}}`).join(" ")
   const keepouts = imported.circuitJson.filter(e => e.type === "pcb_keepout")
-  const circuitJson = [...imported.circuitJson.filter(e => e.type !== "pcb_keepout"), ...imported.definitions.map(d => d.copper)]
+  const circuitJson = expandSharedPadPorts([...imported.circuitJson.filter(e => e.type !== "pcb_keepout"), ...imported.definitions.map(d => d.copper)])
   const context = createBoardConversionContext({ circuitJson })
   let tsx = convertCircuitJsonToTscircuit(circuitJson, { componentName: "ImportedBoard", copperPourMode: "preserve" })
   for (const net of imported.circuitJson) if (net.type === "source_net" && net.trace_width !== undefined) {

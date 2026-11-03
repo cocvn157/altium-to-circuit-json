@@ -6,6 +6,7 @@ import { renderBoard } from "./render-board"
 import { Utils } from "@flatten-js/core"
 import { compareCopperContacts } from "./compare-copper-contacts"
 import { getSingletonPortDiagnostics } from "./get-singleton-port-diagnostics"
+import { isExistingPadSpacing } from "./is-existing-pad-spacing"
 
 const files: Record<number, string> = {21:"ti-pmp23595.PcbDoc",22:"ti-pmp23653-main.PcbDoc",23:"ti-pmp23653-planar-transformer.PcbDoc",24:"ti-pmp22650-main.PcbDoc",25:"ti-pmp22712.PcbDoc",26:"ti-pmp22773.PcbDoc"}
 const sample=Number(process.env.TI_SAMPLE)
@@ -41,13 +42,14 @@ try {
   const existingContacts=new Set(contactComparison.compatible.map(e=>e.pcb_placement_error_id))
   const singletonIds=new Set(singletons.map(e=>e.pcb_port_not_connected_error_id))
   const renderedBoard=output.circuitJson.find(e=>e.type==="pcb_board")!
-  const sourceSpacing=new Set(checkPadPadClearance(output.sourceControl.map(e=>e.type==="pcb_board"&&renderedBoard.type==="pcb_board"?{...e,min_pad_edge_to_pad_edge_clearance:renderedBoard.min_pad_edge_to_pad_edge_clearance}:e)).map(e=>e.message))
-  const regressions=routingErrors.filter(e=>!(e.type==="pcb_port_not_connected_error"&&singletonIds.has(e.pcb_port_not_connected_error_id))&&!(e.type==="pcb_placement_error"&&existingContacts.has(e.pcb_placement_error_id))&&!(e.type==="pcb_pad_pad_clearance_error"&&sourceSpacing.has(e.message)))
+  const sourceSpacing=checkPadPadClearance(output.sourceControl.map(e=>e.type==="pcb_board"&&renderedBoard.type==="pcb_board"?{...e,min_pad_edge_to_pad_edge_clearance:renderedBoard.min_pad_edge_to_pad_edge_clearance}:e))
+  const regressions=routingErrors.filter(e=>!(e.type==="pcb_port_not_connected_error"&&singletonIds.has(e.pcb_port_not_connected_error_id))&&!(e.type==="pcb_placement_error"&&existingContacts.has(e.pcb_placement_error_id))&&!(e.type==="pcb_pad_pad_clearance_error"&&isExistingPadSpacing(sourceSpacing,e)))
   const report={sample,routingEnabled:process.env.TI_ROUTE==="1",definitions:output.definitions,fixed:output.fixed,pours:output.pours.length,traces:output.circuitJson.filter(e=>e.type==="pcb_trace").length,shorts:shorts.length,fixedShorts:fixedShorts.length,addedShorts:shorts.length-fixedShorts.length,removedIslands:output.removedIslands,addedBoardEdgeErrors:afterEdges.length-beforeEdges.length,addedCutoutErrors:afterCutouts.length-beforeCutouts.length,errors:counts(errors),routingErrors:counts(routingErrors),autoroutingMessages:coreRoutingErrors.filter(e=>e.type==="pcb_autorouting_error").map(e=>e.message.slice(0,2000)),shortMessages:shorts.slice(0,3).map(e=>e.message.slice(0,500)),elapsedMs:Math.round(performance.now()-started)}
   Object.assign(report,{placementChecksRunAfterRouting:true,placementErrors:counts(placementErrors)})
   Object.assign(report,{autorouterVersion:(await Bun.file("node_modules/@tscircuit/capacity-autorouter/package.json").json()).version})
   Object.assign(report,{coreRoutingErrors:counts(coreRoutingErrors),sourceFixedShorts:sourceShorts.length,newShortMessages:shorts.filter(e=>!sourceShortMessages.has(e.message)).slice(0,10).map(e=>e.message.slice(0,500)),finalConnectivityMessages:routingErrors.filter(e=>e.type==="pcb_port_not_connected_error").slice(0,4).map(e=>e.message.slice(0,500))})
   Object.assign(report,{newElectricalContacts:contactComparison.added.length,existingElectricalContacts:contactComparison.compatible.length,singletonPortDiagnostics:singletons.length,regressionErrors:counts(regressions),newElectricalContactMessages:contactComparison.added.map(e=>e.message.slice(0,500))})
+  Object.assign(report,{runtimeMessages:errors.filter(e=>e.type==="source_runtime_error").map(e=>e.message.slice(0,2000)),sourcePadSpacingMessages:sourceSpacing.map(e=>e.message),regressionMessages:regressions.slice(0,6).map(e=>e.message)})
   await Bun.write(`results/${sample}-report.json`,JSON.stringify(report,null,2))
   const board=output.circuitJson.find(e=>e.type==="pcb_board")!
   if (board.type!=="pcb_board"||!board.outline?.length) throw new Error("Missing rendered board outline")
