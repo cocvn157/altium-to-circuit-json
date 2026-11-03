@@ -1,0 +1,38 @@
+[
+  {
+    "sample": 21,
+    "name": "PMP23595 Four-Phase GaN Buck Converter",
+    "design": "PMP23595",
+    "layers": 6
+  },
+  {
+    "sample": 22,
+    "name": "PMP23653 25 W Isolated USB-C Supply",
+    "design": "PMP23653",
+    "layers": 4
+  },
+  {
+    "sample": 23,
+    "name": "PMP23653 Planar Transformer",
+    "design": "PMP23653",
+    "layers": 6
+  },
+  {
+    "sample": 24,
+    "name": "PMP22650 6.6 kW Bidirectional GaN Onboard Charger",
+    "design": "PMP22650",
+    "layers": 8
+  },
+  {
+    "sample": 25,
+    "name": "PMP22712 Auxiliary Power Board",
+    "design": "PMP22712",
+    "layers": 4
+  },
+  {
+    "sample": 26,
+    "name": "PMP22773 Sensing Auxiliary Board",
+    "design": "PMP22773",
+    "layers": 4
+  }
+]

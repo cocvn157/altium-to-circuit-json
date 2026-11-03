@@ -1,0 +1,47 @@
+name: Build validated TI board comparison
+on:
+  push:
+    branches: [codex/ti-power-demo-artifact]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    defaults:
+      run:
+        working-directory: scripts/ti-power-demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - name: Require all six native boards to pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python wait-native.py
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 41730663067
+          pattern: ti-power-no-schema-*
+          merge-multiple: true
+          path: scripts/ti-power-demo/native-results
+      - uses: actions/checkout@v4
+        with:
+          repository: tscircuit/dataset-srj24
+          ref: 4adde71764520315816b37cd65780aaec898a71a
+          path: scripts/ti-power-demo/original-dataset
+      - run: bun install --ignore-scripts
+      - run: python prepare-assets.py && bun render-pngs.ts && python build-page.py --copper
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ti-power-boards-html
+          path: scripts/ti-power-demo/dist/ti-power-boards.html
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ti-power-boards-site
+          path: scripts/ti-power-demo/dist
+          retention-days: 14
