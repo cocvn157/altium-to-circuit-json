@@ -132,7 +132,8 @@ export class AltiumCopperClearanceResolver {
           })
       }
       // A final all-net rule covers unconnected copper without masking net exceptions.
-      if (unconnectedGap !== clearance)
+      // Drill-hole spacing is electrical clearance; routed cutouts use board-edge spacing.
+      if (targetType === "hole" || unconnectedGap !== clearance)
         overrides.push({
           clearance: unconnectedGap,
           object_types: [targetType],

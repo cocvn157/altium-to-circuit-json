@@ -78,9 +78,9 @@ test("preserves TI net-class priorities, multilayer targets, hole matrices and p
   )!
   expect(
     hvPour.type === "pcb_copper_pour" &&
-      hvPour.clearance_rules?.every(
-        (rule) => rule.source_net_ids?.length === 1,
-      ),
+      hvPour.clearance_rules
+        ?.filter((rule) => rule.object_types?.[0] !== "hole")
+        .every((rule) => rule.source_net_ids?.length === 1),
   ).toBe(true)
   const lvNet = hvCircuit.find(
     (element) => element.type === "source_net" && element.name === "LV",
