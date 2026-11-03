@@ -18,7 +18,14 @@ export function createPcbConversionContext({
     includePorts: options.includePads !== false,
     layerMap,
   })
-  const routingConstraints = getPcbRoutingConstraints({ document, layerMap })
+  const routingConstraints = getPcbRoutingConstraints({
+    document,
+    layerMap,
+    copperPourMode:
+      options.includeCopperAreas === false
+        ? "preserve"
+        : options.copperPourMode,
+  })
   return {
     componentContext,
     document,

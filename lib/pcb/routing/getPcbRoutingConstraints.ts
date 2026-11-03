@@ -3,14 +3,17 @@ import { milsToMillimeters } from "../geometry"
 import type { PcbCopperLayerMap } from "../layers"
 import type { PcbRoutingConstraints } from "../model"
 import { getHighestPriorityGlobalRule } from "./getHighestPriorityGlobalRule"
+import { getCopperPourClearanceConstraints } from "./getCopperPourClearanceConstraints"
 import { usesViaInPad } from "./usesViaInPad"
 
 export function getPcbRoutingConstraints({
   document,
   layerMap,
+  copperPourMode,
 }: {
   document: AltiumPcbDocument
   layerMap: PcbCopperLayerMap
+  copperPourMode?: "preserve" | "recompute"
 }): PcbRoutingConstraints {
   const widthRule = getHighestPriorityGlobalRule({
     document,
@@ -26,7 +29,10 @@ export function getPcbRoutingConstraints({
     routingViasRule?.viaHoleConstraint?.minimumMils
   const minimumViaPadDiameterMils =
     routingViasRule?.viaDiameterConstraint?.minimumMils
-  const pcbBoard: PcbRoutingConstraints["pcbBoard"] = {}
+  const pcbBoard: PcbRoutingConstraints["pcbBoard"] =
+    copperPourMode === "recompute" && document.polygons.length > 0
+      ? getCopperPourClearanceConstraints(document)
+      : {}
   const routingConstraints: PcbRoutingConstraints = { pcbBoard }
 
   const hasBlindOrBuriedVia = document.records.some(
