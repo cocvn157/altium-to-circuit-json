@@ -12,8 +12,8 @@ const start = source.indexOf("function fillPolygonWithRects(polygon3, options = 
 if (start < 0) throw new Error("Missing pinned polygon sampler")
 const end = source.indexOf("\n}", start) + 2
 const original = source.slice(start, end)
-const previous = "    const scanlineY = y2 + rectHeight / 2;"
-if (!original.includes(previous) || !original.includes("height: rectHeight")) throw new Error("Pinned polygon sampler changed")
-const fixed = original.replace(previous, "    const height = Math.min(rectHeight, maxY - y2);\n    const scanlineY = y2 + height / 2;").replace("height: rectHeight", "height")
+const previous = "  const { rectHeight = 0.1 } = options;"
+if (!original.includes(previous) || !original.includes("  const maxY = Math.max(...yCoords);")) throw new Error("Pinned polygon sampler changed")
+const fixed = original.replace(previous, "  const { rectHeight: maxRectHeight = 0.1 } = options;").replace("  const maxY = Math.max(...yCoords);", "  const maxY = Math.max(...yCoords);\n  const rectHeight = Math.min(maxRectHeight, maxY - minY);")
 await writeFile(entry, source.slice(0,start) + fixed + source.slice(end))
 console.log("Applied small-polygon sampling source fix to core 0.0.2259")
