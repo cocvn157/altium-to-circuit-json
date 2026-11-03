@@ -1,12 +1,10 @@
+import { assertRepresentableClearanceTarget } from "./assertRepresentableClearanceTarget"
 import type { AltiumClearanceObject } from "./AltiumClearanceQuery"
 import type {
   AltiumCopperClearanceRule,
   ApplicableAltiumCopperClearanceRule,
 } from "./AltiumCopperClearanceRule"
-import {
-  assertRepresentableClearanceTarget,
-  matchesAltiumClearanceQuery,
-} from "./matchesAltiumClearanceQuery"
+import { matchesAltiumClearanceQuery } from "./matchesAltiumClearanceQuery"
 
 export function getApplicableAltiumCopperRules(
   rules: AltiumCopperClearanceRule[],

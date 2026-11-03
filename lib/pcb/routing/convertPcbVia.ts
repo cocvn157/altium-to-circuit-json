@@ -1,5 +1,5 @@
 import type { AltiumViaRecord } from "altiumts"
-import type { PcbVia } from "circuit-json"
+import type { PcbVia, PcbViaInput } from "circuit-json"
 import { milsToMillimeters, toMillimeterPoint } from "../geometry"
 import type { PcbCopperLayerMap } from "../layers"
 import type { PcbNetContext } from "../model"
@@ -14,7 +14,7 @@ export function convertPcbVia({
   record: AltiumViaRecord
   recordIndex: number
   netContext: PcbNetContext
-}): PcbVia | undefined {
+}): (PcbVia & Pick<PcbViaInput, "is_tented">) | undefined {
   if (!record.position) return undefined
   const startLayer = layerMap.getLayer(record.startLayer ?? "TOP")
   const endLayer = layerMap.getLayer(record.endLayer ?? "BOTTOM")
@@ -38,7 +38,7 @@ export function convertPcbVia({
       record.holeSizeMils ?? (record.diameterMils ?? 20) * 0.45,
     ),
     layers,
-    tented_on_top: record.tentedTop === true,
-    tented_on_bottom: record.tentedBottom === true,
+    // Preserve the existing import until consumers migrate the deprecated field.
+    is_tented: record.tentedTop === true && record.tentedBottom === true,
   }
 }
