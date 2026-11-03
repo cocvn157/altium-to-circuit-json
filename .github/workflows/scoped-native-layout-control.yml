@@ -1,0 +1,37 @@
+name: Measure native imported placement diagnostics
+on:
+  push:
+    branches: [codex/scoped-copper-native-layout-control]
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [21,22,23,24,25,26]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: tscircuit/circuit-json-to-tscircuit
+          ref: 7ccfacf2e28a2841a4bdb1db3dedfbeb33b60e62
+          path: runtime-converter
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - run: bun install --frozen-lockfile
+      - run: bun install
+        working-directory: runtime-converter
+      - uses: actions/cache@v4
+        with:
+          path: tests/fixtures/downloaded
+          key: altium-references-${{ runner.os }}-${{ hashFiles('scripts/references/reference-manifest.ts') }}
+      - run: bun run download-references
+      - name: Measure original placement diagnostics without copper
+        working-directory: runtime-converter
+        env:
+          TI_SAMPLE: ${{ matrix.sample }}
+        run: bun run ../scripts/scoped-native-layout-control.ts
