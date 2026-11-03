@@ -1,3 +1,4 @@
+import { installExistingViaRelaxation } from "./install-existing-via-relaxation"
 import { installRoutingProbe, getRoutingProbeReport } from "./routing-probe"
 import { mkdir } from "node:fs/promises"
 import { createHash } from "node:crypto"
@@ -11,6 +12,7 @@ import { getSingletonPortDiagnostics } from "./get-singleton-port-diagnostics"
 import { isExistingPadSpacing } from "./is-existing-pad-spacing"
 
 const files: Record<number, string> = {21:"ti-pmp23595.PcbDoc",22:"ti-pmp23653-main.PcbDoc",23:"ti-pmp23653-planar-transformer.PcbDoc",24:"ti-pmp22650-main.PcbDoc",25:"ti-pmp22712.PcbDoc",26:"ti-pmp22773.PcbDoc"}
+installExistingViaRelaxation()
 installRoutingProbe()
 const sample=Number(process.env.TI_SAMPLE)
 const started=performance.now()

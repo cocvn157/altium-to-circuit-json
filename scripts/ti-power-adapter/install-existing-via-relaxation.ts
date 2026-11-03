@@ -5,7 +5,7 @@ export function installExistingViaRelaxation(): void {
   const prototype = AutoroutingPipelineSolver.prototype
   const original = prototype.step
   const configured = new WeakSet<object>()
-  Object.defineProperty(prototype, "step", { value: function(this:any,...args:unknown[]) {
+  Object.defineProperty(prototype, "step", { configurable:true, writable:true, value: function(this:any,...args:unknown[]) {
     if (!configured.has(this)) {
       const stage=this.pipelineDef.find((step:any)=>step.solverName==="globalDrcForceImproveSolver")
       if(!stage)throw new Error("Missing existing global clearance repair stage")

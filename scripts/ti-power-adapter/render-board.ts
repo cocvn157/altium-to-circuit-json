@@ -1,4 +1,3 @@
-import { installExistingViaRelaxation } from "./install-existing-via-relaxation"
 import { createRequire } from "node:module"
 import { transpileModule, ModuleKind, JsxEmit } from "typescript"
 import { RootCircuit } from "@tscircuit/core"
@@ -14,7 +13,6 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
   routingDisabled?: boolean
   stage?: (name: string, details?: Record<string, unknown>) => void
 } = {}) {
-  installExistingViaRelaxation()
   const imported = readBoard(document)
   const board = imported.circuitJson.find(e => e.type === "pcb_board")
   if (!board || board.type !== "pcb_board") throw new Error("No imported board")
