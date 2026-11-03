@@ -12,6 +12,15 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
   stage?: (name: string, details?: Record<string, unknown>) => void
 } = {}) {
   const imported = readBoard(document)
+  const board = imported.circuitJson.find(e => e.type === "pcb_board")
+  if (!board || board.type !== "pcb_board") throw new Error("No imported board")
+  const routingProperties = Object.entries({
+    minTraceWidth: board.min_trace_width,
+    minViaHoleDiameter: board.min_via_hole_diameter,
+    minViaPadDiameter: board.min_via_pad_diameter,
+    isViaInPadAllowed: board.is_via_in_pad_allowed,
+    allowBlindAndBuriedVias: board.allow_blind_and_buried_vias,
+  }).filter(([, value]) => value !== undefined).map(([name, value]) => `${name}={${JSON.stringify(value)}}`).join(" ")
   const circuitJson = [...imported.circuitJson, ...imported.definitions.map(d => d.copper)]
   const context = createBoardConversionContext({ circuitJson })
   const tsx = convertCircuitJsonToTscircuit(circuitJson, { componentName: "ImportedBoard", copperPourMode: "preserve" })
@@ -22,7 +31,7 @@ export async function renderBoard(document: AltiumPcbDocument, options: {
     if (!definition) throw new Error("Generated pour order no longer matches the import")
     return definition.fixed
   }).map(line => line.trimStart().startsWith("<copperpour ") ? line.replace("<copperpour ", "<copperpour unbroken ") : line).join("\n")
-    .replace("<board", options.routingDisabled ? "<board routingDisabled" : '<board autorouter="auto-local" routeRemaining={true} placementDrcChecksDisabled')
+    .replace("<board", `<board ${routingProperties} ${options.routingDisabled ? "routingDisabled" : 'autorouter="auto-local" routeRemaining={true} placementDrcChecksDisabled'}`)
   if (pourIndex !== imported.definitions.length) throw new Error("A copper definition was omitted from TSX")
   options.stage?.("converted", { definitions: imported.definitions.length, fixed: imported.definitions.filter(d => d.fixed).length, tsxCharacters: routingTsx.length })
   const compiled = transpileModule(routingTsx, { compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.ReactJSX } }).outputText
