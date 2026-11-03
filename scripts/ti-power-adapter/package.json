@@ -25,5 +25,8 @@
     "@tscircuit/capacity-autorouter": "0.0.1035",
     "zod": "3.25.76",
     "@flatten-js/core": "1.6.15"
+  },
+  "overrides": {
+    "@tscircuit/cli": "0.1.2429"
   }
 }
