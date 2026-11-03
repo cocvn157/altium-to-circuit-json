@@ -10,7 +10,7 @@ test("a thin cutout branch remains blocked on every physical layer", () => {
   ]
   const before = JSON.stringify(circuitJson)
   const {simpleRouteJson:srj} = getSimpleRouteJsonFromCircuitJson({circuitJson})
-  const covers = (obstacle: typeof srj.obstacles[number]) => Math.abs(2-obstacle.center.x)<=obstacle.width/2 && Math.abs(0.05-obstacle.center.y)<=obstacle.height/2
+  const covers = (obstacle: typeof srj.obstacles[number]) => Math.abs(2-obstacle.center.x)<=obstacle.width/2 && Math.abs(0-obstacle.center.y)<=obstacle.height/2
   expect(srj.obstacles.some(covers)).toBe(false)
   preserveCutoutRoutingClearance({srj,circuitJson})
   const boundary = srj.obstacles.find(covers)
