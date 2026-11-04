@@ -8,7 +8,7 @@ permissions:
 jobs:
   demo:
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 110
     defaults:
       run:
         working-directory: scripts/ti-power-demo
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 41736655488
+          run-id: 41744398325
           pattern: ti-power-no-schema-*
           merge-multiple: true
           path: scripts/ti-power-demo/native-results
