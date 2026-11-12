@@ -80,4 +80,23 @@ export class PcbCopperLayerMap {
     return this.mappings.find((mapping) => mapping.keys.includes(key))
       ?.displayName
   }
+
+  getAltiumPadStackLayer(layer: LayerRef): string {
+    const mapping = this.mappings.find((candidate) => candidate.layer === layer)
+    if (!mapping) {
+      throw new Error(`Cannot map Circuit JSON copper layer ${layer} to Altium`)
+    }
+    const identity = mapping.keys
+      .map((key) => getCopperLayerIdentity(key))
+      .find((key) => key !== undefined)
+    if (identity === "TOP" || identity === "BOTTOM") return identity
+    if (identity?.startsWith("MID")) {
+      return `MID-LAYER${identity.slice("MID".length)}`
+    }
+    if (identity?.startsWith("PLANE")) {
+      return `INTERNAL-PLANE${identity.slice("PLANE".length)}`
+    }
+    const layerIndex = this.layers.indexOf(layer)
+    return `MID-LAYER${layerIndex}`
+  }
 }

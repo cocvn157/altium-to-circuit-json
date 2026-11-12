@@ -1,15 +1,19 @@
-import type { LayerRef, PcbPlatedHole } from "circuit-json"
+import type { LayerRef } from "circuit-json"
 import { createOctagonPoints, milsToMillimeters } from "../geometry"
 import { MILS_TO_MILLIMETERS } from "../model"
 import { convertSlottedThroughHolePad } from "./convertSlottedThroughHolePad"
+import { createPcbPadStack } from "./createPcbPadStack"
 import { getRotatedHoleOffset } from "./getRotatedHoleOffset"
 import { isRectangularShape } from "./isRectangularShape"
 import { isSlottedThroughHolePad } from "./isSlottedThroughHolePad"
-import type { ThroughHolePadConversionOptions } from "./types"
+import type {
+  PcbPlatedHoleWithPadStack,
+  ThroughHolePadConversionOptions,
+} from "./types"
 
 export function convertThroughHolePad(
   options: ThroughHolePadConversionOptions,
-): PcbPlatedHole {
+): PcbPlatedHoleWithPadStack {
   if (isSlottedThroughHolePad(options)) {
     return convertSlottedThroughHolePad(options)
   }
@@ -20,13 +24,19 @@ export function convertThroughHolePad(
     height,
     holeDiameter,
     id,
+    layerMap,
+    record,
     shape,
     width,
     x,
     y,
   } = options
   const holeOffset = getRotatedHoleOffset(geometry)
-  const layers: LayerRef[] = ["top", "bottom"]
+  const layers: LayerRef[] = layerMap?.layers ?? ["top", "bottom"]
+  const pad_stack = layerMap
+    ? createPcbPadStack({ layerMap, record })
+    : undefined
+  const padStackField = pad_stack ? { pad_stack } : {}
 
   if (isRectangularShape(shape)) {
     return {
@@ -45,6 +55,7 @@ export function convertThroughHolePad(
       x,
       y,
       layers,
+      ...padStackField,
     }
   }
 
@@ -67,6 +78,7 @@ export function convertThroughHolePad(
       x,
       y,
       layers,
+      ...padStackField,
     }
   }
 
@@ -86,6 +98,7 @@ export function convertThroughHolePad(
       x,
       y,
       layers,
+      ...padStackField,
     }
   }
 
@@ -98,5 +111,6 @@ export function convertThroughHolePad(
     x,
     y,
     layers,
+    ...padStackField,
   }
 }
